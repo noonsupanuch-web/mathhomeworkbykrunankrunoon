@@ -44,129 +44,6 @@
 <body class="transition-all duration-500 min-h-screen relative" :style="backgroundStyle" id="app-container">
 
     <!-- ========================================== -->
-    <!-- ส่วนของ GOOGLE APPS SCRIPT (ซ่อนไว้เพื่อดึงไปแสดง) -->
-    <!-- ========================================== -->
-    <script type="text/plain" id="gas-script-template">
-function doPost(e) {
-  try {
-    var params = JSON.parse(e.postData.contents);
-    var action = params.action;
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    // สร้างชีตอัตโนมัติหากยังไม่มี
-    var sheets = ['Students', 'Tasks', 'Attendance', 'Settings'];
-    sheets.forEach(function(s) { 
-      if(!ss.getSheetByName(s)) ss.insertSheet(s); 
-    });
-
-    ensureHeaders(ss.getSheetByName('Students'), ['id', 'name', 'code']);
-    ensureHeaders(ss.getSheetByName('Tasks'), ['id', 'studentId', 'date', 'subject', 'description', 'status', 'photo']);
-    ensureHeaders(ss.getSheetByName('Attendance'), ['id', 'date', 'studentId', 'status']);
-    ensureHeaders(ss.getSheetByName('Settings'), ['id', 'value']);
-
-    var output = { status: 'success' };
-
-    if (action === 'getData') {
-      output.students = getSheetData(ss.getSheetByName('Students'));
-      output.tasks = getSheetData(ss.getSheetByName('Tasks'));
-      output.attendance = getSheetData(ss.getSheetByName('Attendance'));
-      output.settings = getSheetData(ss.getSheetByName('Settings'));
-    }
-    else if (action === 'saveStudent') {
-      ss.getSheetByName('Students').appendRow([params.id, params.name, params.code]);
-    }
-    else if (action === 'deleteStudent') {
-      deleteRowById(ss.getSheetByName('Students'), params.id);
-    }
-    else if (action === 'saveTask') {
-      ss.getSheetByName('Tasks').appendRow([params.id, params.studentId, params.date, params.subject, params.description, params.status, params.photo || '']);
-    }
-    else if (action === 'updateTask') {
-      updateRowById(ss.getSheetByName('Tasks'), params.id, params.data);
-    }
-    else if (action === 'deleteTask') {
-      deleteRowById(ss.getSheetByName('Tasks'), params.id);
-    }
-    else if (action === 'updateAttendance') {
-      var sheet = ss.getSheetByName('Attendance');
-      var rowId = params.date + '_' + params.studentId;
-      updateOrAppend(sheet, rowId, [rowId, params.date, params.studentId, params.status]);
-    }
-    else if (action === 'updateSettings') {
-      var sheet = ss.getSheetByName('Settings');
-      updateOrAppend(sheet, params.key, [params.key, params.value]);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify(output)).setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doGet(e) {
-  return ContentService.createTextOutput("ระบบเชื่อมต่อพร้อมใช้งานแล้ว! (Math Club API)").setMimeType(ContentService.MimeType.TEXT);
-}
-
-// --- ฟังก์ชันช่วยเหลือ (Helper Functions) ---
-function ensureHeaders(sheet, headers) {
-  if (sheet.getLastRow() == 0) sheet.appendRow(headers);
-}
-
-function getSheetData(sheet) {
-  var data = sheet.getDataRange().getValues();
-  if(data.length < 2) return [];
-  var headers = data[0];
-  var result = [];
-  for(var i=1; i<data.length; i++) {
-    var obj = {};
-    for(var j=0; j<headers.length; j++) {
-      obj[headers[j]] = data[i][j];
-    }
-    result.push(obj);
-  }
-  return result;
-}
-
-function deleteRowById(sheet, id) {
-  var data = sheet.getDataRange().getValues();
-  for(var i=1; i<data.length; i++) {
-    if(data[i][0] == id) {
-      sheet.deleteRow(i+1);
-      break;
-    }
-  }
-}
-
-function updateRowById(sheet, id, updateObj) {
-  var data = sheet.getDataRange().getValues();
-  var headers = data[0];
-  for(var i=1; i<data.length; i++) {
-    if(data[i][0] == id) {
-      for (var key in updateObj) {
-        var colIndex = headers.indexOf(key);
-        if (colIndex > -1) {
-          sheet.getRange(i+1, colIndex+1).setValue(updateObj[key]);
-        }
-      }
-      break;
-    }
-  }
-}
-
-function updateOrAppend(sheet, id, rowData) {
-  var data = sheet.getDataRange().getValues();
-  for(var i=1; i<data.length; i++) {
-    if(data[i][0] == id) {
-      sheet.getRange(i+1, 1, 1, rowData.length).setValues([rowData]);
-      return;
-    }
-  }
-  sheet.appendRow(rowData);
-}
-    </script>
-
-
-    <!-- ========================================== -->
     <!-- Vue App Container -->
     <!-- ========================================== -->
     <div id="app" class="min-h-screen relative flex justify-center items-center p-4 md:p-8">
@@ -248,17 +125,16 @@ function updateOrAppend(sheet, id, rowData) {
                             <form @submit.prevent="login" class="space-y-6">
                                 <div v-if="loginMode === 'student'" class="text-left space-y-4">
                                     <div>
-                                        <label class="block text-sm font-bold mb-2 text-gray-700">เลือกชื่อของตัวเอง</label>
-                                        <select v-model="selectedStudentId" required class="w-full px-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium cursor-pointer" :style="{ borderColor: settings.themeColor + '40' }">
-                                            <option value="" disabled>-- คลิกเพื่อเลือกชื่อ --</option>
-                                            <option v-for="std in students" :key="std.id" :value="std.id">{{ std.name }}</option>
-                                        </select>
+                                        <label class="block text-sm font-bold mb-2 text-gray-700">ใส่ชื่อเล่น</label>
+                                        <input type="text" v-model="loginName" placeholder="พิมพ์ชื่อเล่น..." required
+                                            class="w-full px-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium"
+                                            :style="{ borderColor: settings.themeColor + '40' }" />
                                     </div>
                                     <div>
                                         <label class="block text-sm font-bold mb-2 text-gray-700">รหัสผ่าน (สอบถามคุณครู)</label>
                                         <div class="relative">
                                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">🔑</span>
-                                            <input type="password" v-model="loginCode" placeholder="เช่น math01" required
+                                            <input type="password" v-model="loginCode" placeholder="ใส่รหัสผ่าน..." required
                                                 class="w-full pl-12 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium"
                                                 :style="{ borderColor: settings.themeColor + '40' }" />
                                         </div>
@@ -306,30 +182,73 @@ function updateOrAppend(sheet, id, rowData) {
 
                         <!-- 2.1 TAB: Attendance -->
                         <div v-if="currentAdminTab === 'attendance'" class="space-y-4 fade-enter-active">
-                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-gray-50 p-4 rounded-2xl border" :style="{ borderColor: settings.themeColor + '40' }">
-                                <div class="flex items-center gap-3">
-                                    <label class="font-bold text-lg">📅 วันที่:</label>
-                                    <input type="date" v-model="attendanceDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
+                            <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4 bg-gray-50 p-4 rounded-2xl border" :style="{ borderColor: settings.themeColor + '40' }">
+                                <div class="flex flex-col gap-3 w-full md:w-auto">
+                                    <div class="flex flex-wrap items-center gap-3">
+                                        <label class="font-bold text-lg text-gray-700">รูปแบบการจัดการ:</label>
+                                        <select v-model="attMode" class="border-2 p-2 rounded-xl focus:outline-none font-medium text-gray-600" :style="{ borderColor: settings.themeColor }">
+                                            <option value="daily">ดูและเช็คชื่อรายวัน</option>
+                                            <option value="monthly">ดูรายงานรายเดือน</option>
+                                            <option value="range">ดูรายงานกำหนดช่วง (รายเทอม/ปี)</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-3">
+                                        <label class="font-bold text-gray-600">เลือกเวลา:</label>
+                                        <input v-if="attMode === 'daily'" type="date" v-model="attendanceDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
+                                        <input v-if="attMode === 'monthly'" type="month" v-model="attMonth" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
+                                        <div v-if="attMode === 'range'" class="flex items-center gap-2">
+                                            <input type="date" v-model="attStartDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }" />
+                                            <span class="font-bold">ถึง</span>
+                                            <input type="date" v-model="attEndDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }" />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <button @click="exportJpg('attendance-content', `เช็คชื่อ_${attendanceDate}`)" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600">ส่งออก JPG</button>
+                                <div class="flex flex-wrap gap-2 md:mt-auto">
+                                    <button @click="exportJpg('attendance-content', `เช็คชื่อ_${attMode}`)" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600">ส่งออก JPG</button>
                                     <button @click="exportExcelAttendance" class="px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow hover:bg-green-600">ส่งออก Excel</button>
-                                    <button @click="exportDoc('attendance-content', `เช็คชื่อ_${attendanceDate}`)" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow hover:bg-indigo-600">ส่งออก Word</button>
+                                    <button @click="exportDoc('attendance-content', `เช็คชื่อ_${attMode}`)" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow hover:bg-indigo-600">ส่งออก Word</button>
                                 </div>
                             </div>
                             
                             <div id="attendance-content" ref="attendanceContent" class="grid gap-4 bg-white p-6 rounded-3xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
-                                <h3 class="font-bold text-xl mb-2 hidden print-show" :style="{ color: settings.themeColor }">สรุปการมาเรียน วันที่: {{ attendanceDate }}</h3>
-                                <div v-if="students.length === 0" class="text-center py-10 text-gray-400 font-medium">ยังไม่มีรายชื่อนักเรียนจ้า ไปเพิ่มในหน้า "จัดการนักเรียน" นะคะ 😊</div>
+                                <h3 class="font-bold text-xl mb-2 hidden print-show" :style="{ color: settings.themeColor }">รายงานการมาเรียน</h3>
                                 
-                                <div v-for="std in students" :key="std.id" class="flex items-center justify-between p-4 rounded-2xl border-2 transition-colors" 
-                                     :style="{ borderColor: isPresent(std.id) ? settings.themeColor : '#e5e7eb', backgroundColor: isPresent(std.id) ? settings.themeColor+'15' : 'transparent' }">
-                                    <span class="font-bold text-lg">{{ std.name }}</span>
-                                    <button @click="toggleAttendance(std.id)" 
-                                            class="px-6 py-2 rounded-xl font-bold text-white transition-transform hover:scale-105 shadow-sm"
-                                            :style="{ backgroundColor: isPresent(std.id) ? settings.themeColor : '#9ca3af' }">
-                                        {{ isPresent(std.id) ? 'มาเรียน 🙋‍♀️' : 'ขาดเรียน 😴' }}
-                                    </button>
+                                <!-- แบบรายวัน (เช็คชื่อได้) -->
+                                <div v-if="attMode === 'daily'" class="space-y-4">
+                                    <div v-if="students.length === 0" class="text-center py-10 text-gray-400 font-medium">ยังไม่มีรายชื่อนักเรียนจ้า ไปเพิ่มในหน้า "จัดการนักเรียน" นะคะ 😊</div>
+                                    <div v-for="std in students" :key="std.id" class="flex items-center justify-between p-4 rounded-2xl border-2 transition-colors" 
+                                         :style="{ borderColor: isPresent(std.id) ? settings.themeColor : '#e5e7eb', backgroundColor: isPresent(std.id) ? settings.themeColor+'15' : 'transparent' }">
+                                        <span class="font-bold text-lg">{{ std.name }} <span class="text-sm font-normal text-gray-500">({{ std.fullname || '-' }})</span></span>
+                                        <button @click="toggleAttendance(std.id)" 
+                                                class="px-6 py-2 rounded-xl font-bold text-white transition-transform hover:scale-105 shadow-sm"
+                                                :style="{ backgroundColor: isPresent(std.id) ? settings.themeColor : '#9ca3af' }">
+                                            {{ isPresent(std.id) ? 'มาเรียน 🙋‍♀️' : 'ขาดเรียน 😴' }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- แบบรายเดือน/ช่วง (ดูสถิติ) -->
+                                <div v-else class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse border-2 rounded-xl overflow-hidden border-gray-100">
+                                        <thead>
+                                            <tr class="border-b-2" :style="{ backgroundColor: settings.themeColor + '15', borderColor: settings.themeColor + '20' }">
+                                                <th class="p-3 w-1/4">ชื่อนักเรียน</th>
+                                                <th class="p-3 w-1/3">ชื่อ-สกุล</th>
+                                                <th class="p-3 w-1/5 text-center">จำนวนที่มา (วัน)</th>
+                                                <th class="p-3 w-1/5 text-center">สถานะรวม</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="std in students" :key="std.id" class="border-b border-gray-100 hover:bg-gray-50">
+                                                <td class="p-3 font-bold">{{ std.name }}</td>
+                                                <td class="p-3 text-gray-600">{{ std.fullname || '-' }}</td>
+                                                <td class="p-3 text-center font-bold text-green-600">{{ getAttendanceCount(std.id) }}</td>
+                                                <td class="p-3 text-center">
+                                                    <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full whitespace-nowrap">ดูวันเวลาใน Excel</span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -396,12 +315,16 @@ function updateOrAppend(sheet, id, rowData) {
                                     <p class="text-sm font-medium text-gray-500 mb-4">* ตั้งชื่อและรหัสผ่านให้นักเรียนใช้ล็อกอินเข้าเว็บ</p>
                                     <form @submit.prevent="addStudent" class="space-y-4">
                                         <div>
-                                            <label class="text-sm font-bold text-gray-500 mb-1 block">ชื่อ-นามสกุล หรือชื่อเล่น</label>
+                                            <label class="text-sm font-bold text-gray-500 mb-1 block">ชื่อเล่น (ใช้ล็อกอินเข้าเว็บ)</label>
                                             <input type="text" v-model="newStudent.name" placeholder="เช่น น้องสมหญิง" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
                                         </div>
                                         <div>
+                                            <label class="text-sm font-bold text-gray-500 mb-1 block">ชื่อ-นามสกุล (เต็ม)</label>
+                                            <input type="text" v-model="newStudent.fullname" placeholder="เช่น ด.ญ.สมหญิง ใจดี" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
+                                        </div>
+                                        <div>
                                             <label class="text-sm font-bold text-gray-500 mb-1 block">รหัสผ่านสำหรับเข้าเว็บ (กำหนดเองได้)</label>
-                                            <input type="text" v-model="newStudent.code" placeholder="เช่น math01" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
+                                            <input type="text" v-model="newStudent.code" placeholder="ตั้งรหัสผ่าน..." required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
                                         </div>
                                         <button type="submit" class="w-full text-white font-bold py-3 rounded-xl shadow-md transition-transform hover:scale-105 text-lg" :style="{ backgroundColor: settings.themeColor }">เพิ่มข้อมูล ✨</button>
                                     </form>
@@ -413,7 +336,8 @@ function updateOrAppend(sheet, id, rowData) {
                                     <table class="w-full text-left">
                                         <thead :style="{ backgroundColor: settings.themeColor + '15' }">
                                             <tr>
-                                                <th class="p-4 font-bold text-gray-700 text-lg">ชื่อนักเรียน</th>
+                                                <th class="p-4 font-bold text-gray-700 text-lg">ชื่อเล่น</th>
+                                                <th class="p-4 font-bold text-gray-700 text-lg">ชื่อ-สกุล</th>
                                                 <th class="p-4 font-bold text-gray-700 text-lg">รหัสเข้าเว็บ</th>
                                                 <th class="p-4 text-center font-bold text-gray-700 text-lg">จัดการ</th>
                                             </tr>
@@ -421,6 +345,7 @@ function updateOrAppend(sheet, id, rowData) {
                                         <tbody>
                                             <tr v-for="std in students" :key="std.id" class="border-b hover:bg-gray-50 transition-colors">
                                                 <td class="p-4 font-bold text-gray-700">{{ std.name }}</td>
+                                                <td class="p-4 text-gray-600">{{ std.fullname || '-' }}</td>
                                                 <td class="p-4 font-mono font-bold text-gray-500">{{ std.code }}</td>
                                                 <td class="p-4 text-center">
                                                     <button @click="deleteStudent(std.id)" class="text-red-400 hover:bg-red-100 p-3 rounded-full transition-colors">🗑️</button>
@@ -437,40 +362,7 @@ function updateOrAppend(sheet, id, rowData) {
 
                         <!-- 2.4 TAB: Settings & DB -->
                         <div v-if="currentAdminTab === 'settings'" class="max-w-3xl mx-auto space-y-8 fade-enter-active">
-                            
-                            <!-- ส่วนของฐานข้อมูล (Google Sheets) -->
-                            <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: '#10b981' }">
-                                <h3 class="font-bold text-2xl mb-4 flex items-center gap-2 text-emerald-600">📊 เชื่อมต่อฐานข้อมูลออนไลน์ (Google Sheets)</h3>
-                                <p class="text-gray-600 mb-4 font-medium">แอปนี้สามารถบันทึกข้อมูลออนไลน์ได้ฟรี! โดยใช้ Google Apps Script โปรดทำตามขั้นตอน:</p>
-                                
-                                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4">
-                                    <ol class="list-decimal pl-5 space-y-2 text-sm text-gray-700 font-medium">
-                                        <li>ไปที่ <a href="https://sheets.google.com" target="_blank" class="text-blue-500 underline">Google Sheets</a> สร้างไฟล์ใหม่ว่างๆ</li>
-                                        <li>เมนู <b>ส่วนขยาย (Extensions)</b> > <b>Apps Script</b></li>
-                                        <li>ลบโค้ดเดิมออกทั้งหมด แล้วก๊อปปี้โค้ดด้านล่างนี้ไปวาง</li>
-                                        <li>กด <b>นำไปใช้งาน (Deploy)</b> > <b>การนำไปใช้งานรายการใหม่ (New deployment)</b></li>
-                                        <li>เลือกประเภทเป็น <b>เว็บแอป (Web App)</b>, สิทธิ์เข้าถึงเป็น <b>ทุกคน (Anyone)</b> แล้วกด <b>Deploy</b></li>
-                                        <li>ก๊อปปี้ <b>Web App URL</b> นำมาวางในช่องด้านล่าง แล้วกดบันทึก</li>
-                                    </ol>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <label class="text-sm font-bold text-gray-600">โค้ดสำหรับวางใน Apps Script:</label>
-                                        <button @click="copyGasCode" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-lg font-bold">คัดลอกโค้ด 📋</button>
-                                    </div>
-                                    <textarea readonly class="w-full h-32 p-3 bg-gray-800 text-green-400 font-mono text-xs rounded-xl">{{ gasCodeText }}</textarea>
-                                </div>
-
-                                <div>
-                                    <label class="text-sm font-bold text-gray-600 mb-1 block">Web App URL ของคุณ:</label>
-                                    <div class="flex gap-2">
-                                        <input type="url" v-model="tempWebAppUrl" placeholder="https://script.google.com/macros/s/..." class="flex-1 p-3 border-2 rounded-xl focus:outline-none focus:border-emerald-500" />
-                                        <button @click="saveWebAppUrl" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 rounded-xl shadow-md transition-colors">บันทึก & เชื่อมต่อ</button>
-                                    </div>
-                                    <p v-if="webAppUrl" class="text-green-600 text-sm mt-2 font-bold">✅ เชื่อมต่อฐานข้อมูลออนไลน์เรียบร้อยแล้ว!</p>
-                                </div>
-                            </div>
+                            <!-- ซ่อนกล่องตั้งค่า Apps Script ตามที่ผู้ใช้รีเควส -->
 
                             <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: settings.themeColor + '40' }">
                                 <h3 class="font-bold text-2xl mb-6 flex items-center gap-2" :style="{ color: settings.themeColor }">🎨 เลือกโทนสีแอป</h3>
@@ -556,13 +448,37 @@ function updateOrAppend(sheet, id, rowData) {
                                 </div>
                                 <div class="md:col-span-1">
                                     <label class="text-sm font-bold text-gray-500 mb-2 block">วิชา</label>
-                                    <input type="text" v-model="newTask.subject" placeholder="เช่น คณิตศาสตร์" required class="w-full p-3 rounded-xl border-2 focus:outline-none font-bold" :style="{ borderColor: settings.themeColor + '40' }" />
+                                    <input type="text" v-model="newTask.subject" list="subject-list" placeholder="พิมพ์หรือเลือกวิชา" required class="w-full p-3 rounded-xl border-2 focus:outline-none font-bold" :style="{ borderColor: settings.themeColor + '40' }" />
+                                    <datalist id="subject-list">
+                                        <option value="คณิตศาสตร์"></option>
+                                        <option value="วิทยาศาสตร์"></option>
+                                        <option value="ภาษาไทย"></option>
+                                        <option value="ภาษาอังกฤษ"></option>
+                                        <option value="สังคมศึกษา"></option>
+                                    </datalist>
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="text-sm font-bold text-gray-500 mb-2 block">รายละเอียด</label>
-                                    <div class="flex flex-col sm:flex-row gap-3">
-                                        <input type="text" v-model="newTask.description" placeholder="เช่น ทำแบบฝึกหัดหน้า 1-5" required class="flex-1 p-3 rounded-xl border-2 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
-                                        <button type="submit" class="text-white font-bold px-6 py-3 rounded-xl shadow-md whitespace-nowrap transition-transform hover:scale-105 text-lg" :style="{ backgroundColor: settings.themeColor }">จดไว้! 📌</button>
+                                    <input type="text" v-model="newTask.description" placeholder="เช่น ทำแบบฝึกหัดหน้า 1-5" required class="w-full p-3 rounded-xl border-2 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
+                                </div>
+                                
+                                <!-- เพิ่มส่วนแนบรูปภาพในฟอร์มจดการบ้าน -->
+                                <div class="md:col-span-4 flex flex-col sm:flex-row gap-3 items-center mt-2">
+                                    <label class="flex-1 cursor-pointer w-full p-3 rounded-xl border-2 border-dashed flex justify-center items-center gap-2 hover:bg-gray-50 transition-colors font-bold text-gray-500" :style="{ borderColor: settings.themeColor + '60' }">
+                                        <span v-if="!newTask.photo">📸 แนบรูปถ่ายการบ้าน (ถ้ามี)</span>
+                                        <span v-else class="text-green-600">✅ แนบรูปแล้ว (คลิกเพื่อเปลี่ยนรูป)</span>
+                                        <input type="file" accept="image/*" id="newTaskFileInput" class="hidden" @change="handleNewTaskPhoto" />
+                                    </label>
+                                    <button type="submit" class="w-full sm:w-auto text-white font-bold px-8 py-3 rounded-xl shadow-md whitespace-nowrap transition-transform hover:scale-105 text-lg" :style="{ backgroundColor: settings.themeColor }">
+                                        บันทึก! 📌
+                                    </button>
+                                </div>
+                                
+                                <!-- แสดงตัวอย่างรูปที่แนบ -->
+                                <div v-if="newTask.photo" class="md:col-span-4 flex justify-center fade-enter-active">
+                                    <div class="relative inline-block mt-2 hover:scale-105 transition-transform">
+                                        <img :src="newTask.photo" class="h-32 object-cover rounded-2xl shadow-md border-4" :style="{ borderColor: settings.themeColor + '40' }" />
+                                        <button type="button" @click="newTask.photo = ''; document.getElementById('newTaskFileInput').value = ''" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md hover:bg-red-600" title="ลบรูป">❌</button>
                                     </div>
                                 </div>
                             </form>
@@ -627,7 +543,7 @@ function updateOrAppend(sheet, id, rowData) {
                 const user = ref(null);
                 const loginMode = ref('student');
                 const loginCode = ref('');
-                const selectedStudentId = ref('');
+                const loginName = ref('');
                 const isLoading = ref(false);
                 
                 // Admin State
@@ -635,21 +551,31 @@ function updateOrAppend(sheet, id, rowData) {
                     { id: 'attendance', label: 'เช็คชื่อ', icon: '📝' },
                     { id: 'reports', label: 'รายงานการบ้าน', icon: '📖' },
                     { id: 'students', label: 'จัดการนักเรียน', icon: '👥' },
-                    { id: 'settings', label: 'ตั้งค่าระบบ', icon: '⚙️' },
+                    { id: 'settings', label: 'ตกแต่งแอป', icon: '🎨' },
                 ];
                 const currentAdminTab = ref('attendance');
-                const attendanceDate = ref(new Date().toISOString().split('T')[0]);
-                const reportDate = ref(new Date().toISOString().split('T')[0]);
-                const newStudent = reactive({ name: '', code: 'math01' });
-                const gasCodeText = ref('');
                 
-                // ฝัง URL เป็นค่าเริ่มต้น เพื่อให้ใช้งานออนไลน์ได้ทันที
-                const defaultGasUrl = 'https://script.google.com/macros/s/AKfycbxBcyVQLXwucwoLsMLbA-JjfBMKzJIBLhu5Uy5ub-ZgwA2h9jnwHpTQPSgkcgDhhvov5w/exec';
-                const tempWebAppUrl = ref(localStorage.getItem('gas_url') || defaultGasUrl);
-                const webAppUrl = ref(localStorage.getItem('gas_url') || defaultGasUrl);
+                // State สำหรับ Attendance Report
+                const attMode = ref('daily');
+                const attendanceDate = ref(new Date().toISOString().split('T')[0]);
+                const attMonth = ref(new Date().toISOString().slice(0, 7));
+                const attStartDate = ref(new Date().toISOString().split('T')[0]);
+                const attEndDate = ref(new Date().toISOString().split('T')[0]);
+
+                // State สำหรับ Report
+                const reportMode = ref('daily');
+                const reportDate = ref(new Date().toISOString().split('T')[0]);
+                const reportMonth = ref(new Date().toISOString().slice(0, 7));
+                const reportStartDate = ref(new Date().toISOString().split('T')[0]);
+                const reportEndDate = ref(new Date().toISOString().split('T')[0]);
+                
+                const newStudent = reactive({ name: '', code: 'math01', fullname: '' });
+                
+                // ฝัง URL แบบฮาร์ดโค้ด ไม่ต้องมีช่องตั้งค่า
+                const webAppUrl = 'https://script.google.com/macros/s/AKfycbxBcyVQLXwucwoLsMLbA-JjfBMKzJIBLhu5Uy5ub-ZgwA2h9jnwHpTQPSgkcgDhhvov5w/exec';
 
                 // Student State
-                const newTask = reactive({ date: new Date().toISOString().split('T')[0], subject: '', description: '' });
+                const newTask = reactive({ date: new Date().toISOString().split('T')[0], subject: '', description: '', photo: '' });
 
                 // Data State
                 const students = ref([
@@ -709,12 +635,26 @@ function updateOrAppend(sheet, id, rowData) {
                     return record ? record.status === 'true' : false;
                 };
 
+                const getAttendanceForPeriod = () => {
+                    return attendance.value.filter(a => {
+                        if (!a) return false;
+                        if (attMode.value === 'daily') return a.date === attendanceDate.value;
+                        if (attMode.value === 'monthly') return a.date.startsWith(attMonth.value);
+                        if (attMode.value === 'range') return a.date >= attStartDate.value && a.date <= attEndDate.value;
+                        return false;
+                    });
+                };
+
+                const getAttendanceCount = (studentId) => {
+                    const records = getAttendanceForPeriod();
+                    return records.filter(a => a.studentId === studentId && a.status === 'true').length;
+                };
+
                 // --- Google Sheets API Integration ---
                 const apiCall = async (payload) => {
-                    if (!webAppUrl.value) return; // ถ้าไม่ได้ต่อเว็บแอป ทำงานแบบออฟไลน์ไปก่อน
+                    if (!webAppUrl) return; 
                     try {
-                        // ส่งเป็น text/plain ป้องกันปัญหา CORS Preflight ใน Apps Script
-                        fetch(webAppUrl.value, {
+                        fetch(webAppUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                             body: JSON.stringify(payload)
@@ -725,10 +665,10 @@ function updateOrAppend(sheet, id, rowData) {
                 };
 
                 const fetchAllData = async () => {
-                    if (!webAppUrl.value) return;
+                    if (!webAppUrl) return;
                     isLoading.value = true;
                     try {
-                        const res = await fetch(webAppUrl.value, {
+                        const res = await fetch(webAppUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                             body: JSON.stringify({ action: 'getData' })
@@ -751,19 +691,6 @@ function updateOrAppend(sheet, id, rowData) {
                     }
                 };
 
-                const saveWebAppUrl = () => {
-                    localStorage.setItem('gas_url', tempWebAppUrl.value);
-                    webAppUrl.value = tempWebAppUrl.value;
-                    showAlert('สำเร็จ', 'บันทึก URL ระบบฐานข้อมูลเรียบร้อยแล้ว');
-                    fetchAllData();
-                };
-
-                const copyGasCode = () => {
-                    navigator.clipboard.writeText(gasCodeText.value).then(() => {
-                        showAlert('คัดลอกแล้ว', 'นำโค้ดนี้ไปวางใน Google Apps Script ได้เลยจ้า');
-                    });
-                };
-
                 // --- App Actions ---
                 const login = () => {
                     const code = loginCode.value.trim();
@@ -779,20 +706,20 @@ function updateOrAppend(sheet, id, rowData) {
                             showAlert('ยังไม่มีข้อมูลนักเรียน', 'ตอนนี้ในระบบยังไม่มีชื่อนักเรียนเลยจ้า กรุณาแจ้งให้คุณครูเพิ่มรายชื่อให้ก่อนนะคะ 🥺');
                             return;
                         }
-                        if (!selectedStudentId.value) {
-                            showAlert('ลืมเลือกชื่อ!', 'กรุณาคลิกเลือกชื่อของตัวเองในช่องด้านบนก่อนนะคะ 🥺');
+                        if (!loginName.value) {
+                            showAlert('ลืมพิมพ์ชื่อ!', 'กรุณาพิมพ์ชื่อเล่นของตัวเองในช่องด้านบนก่อนนะคะ 🥺');
                             return;
                         }
-                        const std = students.value.find(s => s.id === selectedStudentId.value);
+                        const std = students.value.find(s => s.name === loginName.value.trim());
                         if (std && std.code === code) {
                             user.value = { role: 'student', id: std.id, name: std.name };
                         } else {
-                            showAlert('อุ๊ปส์!', 'รหัสผ่านไม่ถูกต้องค่ะ! ลองสอบถามรหัสจากคุณครูดูน้า 🥺');
+                            showAlert('อุ๊ปส์!', 'ชื่อเล่น หรือ รหัสผ่านไม่ถูกต้องค่ะ! ลองตรวจสอบดูน้า 🥺');
                             return;
                         }
                     }
                     loginCode.value = '';
-                    selectedStudentId.value = '';
+                    loginName.value = '';
                 };
 
                 const logout = () => {
@@ -801,13 +728,13 @@ function updateOrAppend(sheet, id, rowData) {
 
                 const addStudent = () => {
                     if(students.value.find(s => s.name === newStudent.name)) {
-                        showAlert('ซ้ำแล้วจ้า', 'ชื่อนี้มีในระบบแล้ว ใส่ชื่อจริงหรือนามสกุลต่อท้ายเพิ่มน้า!'); return;
+                        showAlert('ซ้ำแล้วจ้า', 'ชื่อเล่นนี้มีในระบบแล้ว ใส่ตัวเลขต่อท้ายเพิ่มน้า!'); return;
                     }
                     const id = 'std_' + Date.now();
-                    const stdData = { id, name: newStudent.name, code: newStudent.code };
+                    const stdData = { id, name: newStudent.name, code: newStudent.code, fullname: newStudent.fullname };
                     students.value.push(stdData);
                     showAlert('เย้!', 'เพิ่มรายชื่อนักเรียนเรียบร้อยแล้ว 🎊');
-                    newStudent.name = ''; newStudent.code = 'math01';
+                    newStudent.name = ''; newStudent.fullname = ''; newStudent.code = 'math01';
                     
                     apiCall({ action: 'saveStudent', ...stdData });
                 };
@@ -833,16 +760,31 @@ function updateOrAppend(sheet, id, rowData) {
                     apiCall({ action: 'updateAttendance', date: attendanceDate.value, studentId, status: newStatus });
                 };
 
+                const handleNewTaskPhoto = async (event) => {
+                    const file = event.target.files[0];
+                    if(file) {
+                        const base64 = await processImage(file);
+                        newTask.photo = base64;
+                    }
+                };
+
                 const addTask = () => {
                     const id = 'task_' + Date.now();
                     const taskData = { 
                         id, studentId: user.value.id, 
                         date: newTask.date, subject: newTask.subject, 
-                        description: newTask.description, status: 'pending', photo: '' 
+                        description: newTask.description, 
+                        status: newTask.photo ? 'done' : 'pending', // ถ้ารูปมีให้ปรับเป็น "เสร็จแล้ว" ทันที
+                        photo: newTask.photo || '' 
                     };
                     tasks.value.push(taskData);
-                    newTask.subject = ''; newTask.description = '';
-                    showAlert('เก่งมาก!', 'จดการบ้านเรียบร้อยแล้ว สู้ๆ นะคะ ✌️');
+                    
+                    // Reset ฟอร์ม
+                    newTask.subject = ''; newTask.description = ''; newTask.photo = '';
+                    const fileInput = document.getElementById('newTaskFileInput');
+                    if(fileInput) fileInput.value = '';
+                    
+                    showAlert('เก่งมาก!', 'บันทึกการบ้านเรียบร้อยแล้ว สู้ๆ นะคะ ✌️');
                     
                     apiCall({ action: 'saveTask', ...taskData });
                 };
@@ -923,11 +865,22 @@ function updateOrAppend(sheet, id, rowData) {
                 };
 
                 const exportExcelAttendance = () => {
-                    let csv = "\uFEFFลำดับ,ชื่อนักเรียน,สถานะ\n";
-                    students.value.forEach((std, i) => {
-                        csv += `"${i+1}","${std.name}","${isPresent(std.id) ? 'มาเรียน' : 'ขาดเรียน'}"\n`;
-                    });
-                    downloadBlob(csv, `การมาเรียน_${attendanceDate.value}.csv`, 'text/csv;charset=utf-8;');
+                    let csv = "\uFEFFชื่อเล่น,ชื่อ-สกุล,วันที่,สถานะ\n";
+                    const records = getAttendanceForPeriod();
+                    
+                    if (attMode.value === 'daily') {
+                        students.value.forEach((std) => {
+                            csv += `"${std.name}","${std.fullname || ''}","${attendanceDate.value}","${isPresent(std.id) ? 'มาเรียน' : 'ขาดเรียน'}"\n`;
+                        });
+                    } else {
+                        records.forEach(a => {
+                            const std = students.value.find(s => s.id === a.studentId);
+                            if (std) {
+                                csv += `"${std.name}","${std.fullname || ''}","${a.date}","${a.status === 'true' ? 'มาเรียน' : 'ขาดเรียน'}"\n`;
+                            }
+                        });
+                    }
+                    downloadBlob(csv, `รายงานการมาเรียน_${attMode.value}.csv`, 'text/csv;charset=utf-8;');
                 };
 
                 const exportExcelReport = () => {
@@ -963,20 +916,21 @@ function updateOrAppend(sheet, id, rowData) {
 
                 // Lifecycle
                 onMounted(() => {
-                    gasCodeText.value = document.getElementById('gas-script-template').innerText.trim();
                     fetchAllData();
                 });
 
                 return {
-                    user, loginMode, loginCode, selectedStudentId, login, logout, isLoading,
-                    adminTabs, currentAdminTab, attendanceDate, reportDate,
+                    user, loginMode, loginCode, loginName, login, logout, isLoading,
+                    adminTabs, currentAdminTab, 
+                    attMode, attendanceDate, attMonth, attStartDate, attEndDate,
+                    reportMode, reportDate, reportMonth, reportStartDate, reportEndDate,
                     students, newStudent, addStudent, deleteStudent,
-                    tasks, mySortedTasks, addTask, markTaskDone, deleteTask, getTasksForStudent, uploadTaskPhoto,
-                    attendance, toggleAttendance, isPresent,
+                    tasks, mySortedTasks, newTask, addTask, handleNewTaskPhoto, markTaskDone, deleteTask, getTasksForStudent, uploadTaskPhoto,
+                    attendance, toggleAttendance, isPresent, getAttendanceCount, getAttendanceForPeriod,
                     settings, themeColors, updateSetting, uploadImage,
                     modal, showAlert, showConfirm, closeModal, backgroundStyle,
                     exportJpg, exportExcelAttendance, exportExcelReport, exportDoc,
-                    gasCodeText, tempWebAppUrl, webAppUrl, saveWebAppUrl, copyGasCode
+                    webAppUrl
                 };
             }
         }).mount('#app');
