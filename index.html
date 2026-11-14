@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ชุมนุมการบ้านคณิตติดเพื่อน</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    
+    <!-- HTML2Canvas สำหรับส่งออกรูปภาพ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Mali', cursive; overflow-x: hidden; }
+        
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(3deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .cute-float { animation: float 4s ease-in-out infinite; }
+        .cute-float-delayed { animation: float 5s ease-in-out infinite 2s; }
+        .cute-float-fast { animation: float 3s ease-in-out infinite 1s; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--theme-primary); border-radius: 10px; opacity: 0.8; }
+        
+        /* Transition Animations */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .slide-up-enter-active, .slide-up-leave-active { transition: all 0.4s ease; }
+        .slide-up-enter-from { opacity: 0; transform: translateY(20px); }
+        .slide-up-leave-to { opacity: 0; transform: translateY(-20px); }
+    </style>
+</head>
+<body class="transition-all duration-500 min-h-screen relative" :style="backgroundStyle" id="app-container">
+
+    <!-- ========================================== -->
+    <!-- ส่วนของ GOOGLE APPS SCRIPT (ซ่อนไว้เพื่อดึงไปแสดง) -->
+    <!-- ========================================== -->
+    <script type="text/plain" id="gas-script-template">
+function doPost(e) {
+  try {
+    var params = JSON.parse(e.postData.contents);
+    var action = params.action;
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // สร้างชีตอัตโนมัติหากยังไม่มี
+    var sheets = ['Students', 'Tasks', 'Attendance', 'Settings'];
+    sheets.forEach(function(s) { 
+      if(!ss.getSheetByName(s)) ss.insertSheet(s); 
+    });
+
+    ensureHeaders(ss.getSheetByName('Students'), ['id', 'name', 'code']);
+    ensureHeaders(ss.getSheetByName('Tasks'), ['id', 'studentId', 'date', 'subject', 'description', 'status', 'photo']);
+    ensureHeaders(ss.getSheetByName('Attendance'), ['id', 'date', 'studentId', 'status']);
+    ensureHeaders(ss.getSheetByName('Settings'), ['id', 'value']);
+
+    var output = { status: 'success' };
+
+    if (action === 'getData') {
+      output.students = getSheetData(ss.getSheetByName('Students'));
+      output.tasks = getSheetData(ss.getSheetByName('Tasks'));
+      output.attendance = getSheetData(ss.getSheetByName('Attendance'));
+      output.settings = getSheetData(ss.getSheetByName('Settings'));
+    }
+    else if (action === 'saveStudent') {
+      ss.getSheetByName('Students').appendRow([params.id, params.name, params.code]);
+    }
+    else if (action === 'deleteStudent') {
+      deleteRowById(ss.getSheetByName('Students'), params.id);
+    }
+    else if (action === 'saveTask') {
+      ss.getSheetByName('Tasks').appendRow([params.id, params.studentId, params.date, params.subject, params.description, params.status, params.photo || '']);
+    }
+    else if (action === 'updateTask') {
+      updateRowById(ss.getSheetByName('Tasks'), params.id, params.data);
+    }
+    else if (action === 'deleteTask') {
+      deleteRowById(ss.getSheetByName('Tasks'), params.id);
+    }
+    else if (action === 'updateAttendance') {
+      var sheet = ss.getSheetByName('Attendance');
+      var rowId = params.date + '_' + params.studentId;
+      updateOrAppend(sheet, rowId, [rowId, params.date, params.studentId, params.status]);
+    }
+    else if (action === 'updateSettings') {
+      var sheet = ss.getSheetByName('Settings');
+      updateOrAppend(sheet, params.key, [params.key, params.value]);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify(output)).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput("ระบบเชื่อมต่อพร้อมใช้งานแล้ว! (Math Club API)").setMimeType(ContentService.MimeType.TEXT);
+}
+
+// --- ฟังก์ชันช่วยเหลือ (Helper Functions) ---
+function ensureHeaders(sheet, headers) {
+  if (sheet.getLastRow() == 0) sheet.appendRow(headers);
+}
+
+function getSheetData(sheet) {
+  var data = sheet.getDataRange().getValues();
+  if(data.length < 2) return [];
+  var headers = data[0];
+  var result = [];
+  for(var i=1; i<data.length; i++) {
+    var obj = {};
+    for(var j=0; j<headers.length; j++) {
+      obj[headers[j]] = data[i][j];
+    }
+    result.push(obj);
+  }
+  return result;
+}
+
+function deleteRowById(sheet, id) {
+  var data = sheet.getDataRange().getValues();
+  for(var i=1; i<data.length; i++) {
+    if(data[i][0] == id) {
+      sheet.deleteRow(i+1);
+      break;
+    }
+  }
+}
+
+function updateRowById(sheet, id, updateObj) {
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  for(var i=1; i<data.length; i++) {
+    if(data[i][0] == id) {
+      for (var key in updateObj) {
+        var colIndex = headers.indexOf(key);
+        if (colIndex > -1) {
+          sheet.getRange(i+1, colIndex+1).setValue(updateObj[key]);
+        }
+      }
+      break;
+    }
+  }
+}
+
+function updateOrAppend(sheet, id, rowData) {
+  var data = sheet.getDataRange().getValues();
+  for(var i=1; i<data.length; i++) {
+    if(data[i][0] == id) {
+      sheet.getRange(i+1, 1, 1, rowData.length).setValues([rowData]);
+      return;
+    }
+  }
+  sheet.appendRow(rowData);
+}
+    </script>
+
+
+    <!-- ========================================== -->
+    <!-- Vue App Container -->
+    <!-- ========================================== -->
+    <div id="app" class="min-h-screen relative flex justify-center items-center p-4 md:p-8">
+        
+        <!-- Background Decorations -->
+        <div class="absolute top-10 left-10 text-6xl cute-float opacity-80 pointer-events-none hidden md:block z-0">☁️</div>
+        <div class="absolute top-40 right-20 text-6xl cute-float-delayed opacity-80 pointer-events-none hidden md:block z-0">🌸</div>
+        <div class="absolute bottom-20 left-1/4 text-5xl cute-float opacity-80 pointer-events-none hidden md:block z-0">✨</div>
+        
+        <!-- Modal แจ้งเตือนน่ารักๆ -->
+        <transition name="fade">
+            <div v-if="modal.isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl text-center border-4 relative" :style="{ borderColor: settings.themeColor }">
+                    <div class="absolute -top-12 left-1/2 -translate-x-1/2 text-6xl cute-float-fast">
+                        {{ modal.type === 'confirm' ? '🤔' : '🐰' }}
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3 mt-4" :style="{ color: settings.themeColor }">{{ modal.title }}</h3>
+                    <p class="text-gray-600 mb-8 font-medium text-lg">{{ modal.message }}</p>
+                    <div class="flex justify-center gap-3">
+                        <button v-if="modal.type === 'confirm'" @click="closeModal" class="px-6 py-3 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors">
+                            ยกเลิก
+                        </button>
+                        <button @click="modal.onConfirm" class="px-6 py-3 rounded-2xl text-white font-bold transition-transform hover:scale-105 shadow-md" :style="{ backgroundColor: settings.themeColor }">
+                            {{ modal.type === 'confirm' ? 'ตกลงจ้า' : 'รับทราบ!' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- ภาพคุณครู ซ้าย-ขวา -->
+        <div v-if="settings.teacher1" class="hidden xl:block absolute left-4 lg:left-12 bottom-0 w-48 h-auto z-20 cute-float">
+            <img :src="settings.teacher1" alt="Teacher 1" class="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform" />
+        </div>
+        <div v-if="settings.teacher2" class="hidden xl:block absolute right-4 lg:right-12 bottom-0 w-48 h-auto z-20 cute-float-delayed">
+            <img :src="settings.teacher2" alt="Teacher 2" class="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform" />
+        </div>
+
+        <!-- กล่องหลักของแอป -->
+        <div class="w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-[2.5rem] shadow-2xl overflow-hidden border-4 relative z-30 flex flex-col min-h-[600px]" :style="{ borderColor: settings.themeColor }">
+            
+            <!-- Header -->
+            <div class="p-6 text-center text-white relative shadow-sm" :style="{ backgroundColor: settings.themeColor }">
+                <h1 class="text-2xl md:text-4xl font-bold flex items-center justify-center gap-3 drop-shadow-md">
+                    🌸 ชุมนุมการบ้านคณิตติดเพื่อน 📚
+                </h1>
+                <button v-if="user" @click="logout" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 p-3 rounded-full transition-colors flex items-center justify-center" title="ออกจากระบบ">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+            </div>
+
+            <div class="p-4 md:p-8 flex-1 flex flex-col">
+                
+                <!-- Loading State -->
+                <div v-if="isLoading" class="flex-1 flex flex-col items-center justify-center space-y-4">
+                    <div class="text-6xl cute-float">⏳</div>
+                    <h2 class="text-xl font-bold text-gray-500">กำลังเชื่อมต่อข้อมูล...</h2>
+                </div>
+
+                <!-- 1. LOGIN SCREEN -->
+                <transition name="slide-up">
+                    <div v-if="!user && !isLoading" class="flex flex-col items-center justify-center flex-1 w-full relative">
+                        <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl w-full max-w-md border-4 relative z-10" :style="{ borderColor: settings.themeColor + '40' }">
+                            <div class="absolute -top-20 left-1/2 -translate-x-1/2 text-[5rem] cute-float z-20 drop-shadow-lg">🐻‍❄️</div>
+                            <div class="text-center mb-8 mt-6">
+                                <h2 class="text-3xl font-extrabold text-gray-700 mb-2">ยินดีต้อนรับจ้า!</h2>
+                                <p class="text-gray-500 font-medium">กรุณากรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
+                            </div>
+                            <form @submit.prevent="login" class="space-y-6">
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">🔑</span>
+                                    <input type="password" v-model="loginCode" placeholder="รหัสนักเรียน หรือ รหัสครู" required
+                                        class="w-full pl-12 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium"
+                                        :style="{ borderColor: settings.themeColor + '40' }" />
+                                </div>
+                                <button type="submit" class="w-full text-white font-bold text-lg py-4 rounded-2xl transition-transform hover:scale-105 shadow-lg flex justify-center items-center gap-2"
+                                    :style="{ backgroundColor: settings.themeColor }">
+                                    เข้าสู่ระบบ ✨
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </transition>
+
+                <!-- 2. ADMIN DASHBOARD -->
+                <transition name="slide-up">
+                    <div v-if="user && user.role === 'admin' && !isLoading" class="flex-1 flex flex-col w-full">
+                        
+                        <!-- Tabs -->
+                        <div class="flex flex-wrap gap-2 mb-6 border-b-2 pb-4" :style="{ borderColor: settings.themeColor + '20' }">
+                            <button v-for="tab in adminTabs" :key="tab.id" @click="currentAdminTab = tab.id"
+                                class="flex items-center gap-2 px-5 py-3 rounded-full font-bold transition-all text-sm md:text-base"
+                                :class="currentAdminTab === tab.id ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                                :style="currentAdminTab === tab.id ? { backgroundColor: settings.themeColor } : {}">
+                                {{ tab.icon }} {{ tab.label }}
+                            </button>
+                        </div>
+
+                        <!-- 2.1 TAB: Attendance -->
+                        <div v-if="currentAdminTab === 'attendance'" class="space-y-4 fade-enter-active">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-gray-50 p-4 rounded-2xl border" :style="{ borderColor: settings.themeColor + '40' }">
+                                <div class="flex items-center gap-3">
+                                    <label class="font-bold text-lg">📅 วันที่:</label>
+                                    <input type="date" v-model="attendanceDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button @click="exportJpg('attendance-content', `เช็คชื่อ_${attendanceDate}`)" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600">ส่งออก JPG</button>
+                                    <button @click="exportExcelAttendance" class="px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow hover:bg-green-600">ส่งออก Excel</button>
+                                    <button @click="exportDoc('attendance-content', `เช็คชื่อ_${attendanceDate}`)" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow hover:bg-indigo-600">ส่งออก Word</button>
+                                </div>
+                            </div>
+                            
+                            <div id="attendance-content" ref="attendanceContent" class="grid gap-4 bg-white p-6 rounded-3xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
+                                <h3 class="font-bold text-xl mb-2 hidden print-show" :style="{ color: settings.themeColor }">สรุปการมาเรียน วันที่: {{ attendanceDate }}</h3>
+                                <div v-if="students.length === 0" class="text-center py-10 text-gray-400 font-medium">ยังไม่มีรายชื่อนักเรียนจ้า ไปเพิ่มในหน้า "จัดการนักเรียน" นะคะ 😊</div>
+                                
+                                <div v-for="std in students" :key="std.id" class="flex items-center justify-between p-4 rounded-2xl border-2 transition-colors" 
+                                     :style="{ borderColor: isPresent(std.id) ? settings.themeColor : '#e5e7eb', backgroundColor: isPresent(std.id) ? settings.themeColor+'15' : 'transparent' }">
+                                    <span class="font-bold text-lg">{{ std.name }}</span>
+                                    <button @click="toggleAttendance(std.id)" 
+                                            class="px-6 py-2 rounded-xl font-bold text-white transition-transform hover:scale-105 shadow-sm"
+                                            :style="{ backgroundColor: isPresent(std.id) ? settings.themeColor : '#9ca3af' }">
+                                        {{ isPresent(std.id) ? 'มาเรียน 🙋‍♀️' : 'ขาดเรียน 😴' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2.2 TAB: Reports -->
+                        <div v-if="currentAdminTab === 'reports'" class="space-y-6 fade-enter-active">
+                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50 p-4 rounded-2xl border" :style="{ borderColor: settings.themeColor + '40' }">
+                                <div class="flex items-center gap-3">
+                                    <label class="font-bold text-lg">เลือกวันที่ดูรายงาน:</label>
+                                    <input type="date" v-model="reportDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button @click="exportJpg('report-content', `รายงาน_${reportDate}`)" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600">ส่งออก JPG</button>
+                                    <button @click="exportExcelReport" class="px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow hover:bg-green-600">ส่งออก Excel</button>
+                                    <button @click="exportDoc('report-content', `รายงาน_${reportDate}`)" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow hover:bg-indigo-600">ส่งออก Word</button>
+                                </div>
+                            </div>
+
+                            <div id="report-content" ref="reportContent" class="space-y-6 bg-white p-6 rounded-3xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
+                                <div v-for="std in students" :key="std.id" class="border-2 rounded-2xl p-5 bg-white shadow-sm" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <h3 class="font-bold text-xl mb-3 flex items-center gap-2" :style="{ color: settings.themeColor }">
+                                        <span class="bg-pink-100 p-2 rounded-full">👦👧</span> {{ std.name }}
+                                    </h3>
+                                    
+                                    <p v-if="getTasksForStudent(std.id).length === 0" class="text-gray-400 font-medium pl-12">ไม่มีการบ้านที่จดไว้ในวันนี้ 🎉</p>
+                                    
+                                    <div v-else class="overflow-x-auto">
+                                        <table class="w-full text-left border-collapse border-2 rounded-xl overflow-hidden border-gray-100">
+                                            <thead>
+                                                <tr class="border-b-2" :style="{ backgroundColor: settings.themeColor + '15', borderColor: settings.themeColor + '20' }">
+                                                    <th class="p-3 w-1/4">วิชา</th>
+                                                    <th class="p-3 w-1/3">รายละเอียด</th>
+                                                    <th class="p-3 w-1/6 text-center">สถานะ</th>
+                                                    <th class="p-3 w-1/4 text-center">รูปถ่ายงาน (ถ้ามี)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="t in getTasksForStudent(std.id)" :key="t.id" class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                                    <td class="p-3 font-bold text-gray-700">{{ t.subject }}</td>
+                                                    <td class="p-3 text-gray-600">{{ t.description }}</td>
+                                                    <td class="p-3 text-center">
+                                                        <span v-if="t.status === 'done'" class="text-green-600 font-bold text-sm bg-green-100 px-4 py-1.5 rounded-full border border-green-200">เสร็จแล้ว ✨</span>
+                                                        <span v-else class="text-orange-500 font-bold text-sm bg-orange-100 px-4 py-1.5 rounded-full border border-orange-200">ยังไม่เสร็จ 💦</span>
+                                                    </td>
+                                                    <td class="p-3 text-center align-middle">
+                                                        <a v-if="t.status === 'done' && t.photo" :href="t.photo" target="_blank" class="inline-block transition-transform hover:scale-110">
+                                                            <img :src="t.photo" alt="รูปการบ้าน" class="w-20 h-20 md:w-24 md:h-24 object-cover rounded-xl shadow-sm border-2" :style="{ borderColor: settings.themeColor + '40' }" />
+                                                        </a>
+                                                        <span v-else class="text-gray-300 text-sm">-</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2.3 TAB: Students -->
+                        <div v-if="currentAdminTab === 'students'" class="grid md:grid-cols-3 gap-6 fade-enter-active">
+                            <div class="md:col-span-1">
+                                <div class="p-6 rounded-3xl border-4 bg-white sticky top-4" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <h3 class="font-bold text-xl mb-4 text-gray-700">เพิ่มนักเรียน 👧👦</h3>
+                                    <form @submit.prevent="addStudent" class="space-y-4">
+                                        <div>
+                                            <label class="text-sm font-bold text-gray-500 mb-1 block">ชื่อ-นามสกุล หรือชื่อเล่น</label>
+                                            <input type="text" v-model="newStudent.name" placeholder="เช่น น้องสมหญิง" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
+                                        </div>
+                                        <div>
+                                            <label class="text-sm font-bold text-gray-500 mb-1 block">รหัสผ่านสำหรับเข้าเว็บ</label>
+                                            <input type="text" v-model="newStudent.code" placeholder="เช่น std01" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
+                                        </div>
+                                        <button type="submit" class="w-full text-white font-bold py-3 rounded-xl shadow-md transition-transform hover:scale-105 text-lg" :style="{ backgroundColor: settings.themeColor }">เพิ่มข้อมูล ✨</button>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <div class="bg-white rounded-3xl border-4 overflow-hidden" :style="{ borderColor: settings.themeColor + '20' }">
+                                    <table class="w-full text-left">
+                                        <thead :style="{ backgroundColor: settings.themeColor + '15' }">
+                                            <tr>
+                                                <th class="p-4 font-bold text-gray-700 text-lg">ชื่อนักเรียน</th>
+                                                <th class="p-4 font-bold text-gray-700 text-lg">รหัสเข้าเว็บ</th>
+                                                <th class="p-4 text-center font-bold text-gray-700 text-lg">จัดการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="std in students" :key="std.id" class="border-b hover:bg-gray-50 transition-colors">
+                                                <td class="p-4 font-bold text-gray-700">{{ std.name }}</td>
+                                                <td class="p-4 font-mono font-bold text-gray-500">{{ std.code }}</td>
+                                                <td class="p-4 text-center">
+                                                    <button @click="deleteStudent(std.id)" class="text-red-400 hover:bg-red-100 p-3 rounded-full transition-colors">🗑️</button>
+                                                </td>
+                                            </tr>
+                                            <tr v-if="students.length === 0">
+                                                <td colspan="3" class="text-center p-8 text-gray-400 font-medium">ยังไม่มีนักเรียนในระบบจ้า</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2.4 TAB: Settings & DB -->
+                        <div v-if="currentAdminTab === 'settings'" class="max-w-3xl mx-auto space-y-8 fade-enter-active">
+                            
+                            <!-- ส่วนของฐานข้อมูล (Google Sheets) -->
+                            <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: '#10b981' }">
+                                <h3 class="font-bold text-2xl mb-4 flex items-center gap-2 text-emerald-600">📊 เชื่อมต่อฐานข้อมูลออนไลน์ (Google Sheets)</h3>
+                                <p class="text-gray-600 mb-4 font-medium">แอปนี้สามารถบันทึกข้อมูลออนไลน์ได้ฟรี! โดยใช้ Google Apps Script โปรดทำตามขั้นตอน:</p>
+                                
+                                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4">
+                                    <ol class="list-decimal pl-5 space-y-2 text-sm text-gray-700 font-medium">
+                                        <li>ไปที่ <a href="https://sheets.google.com" target="_blank" class="text-blue-500 underline">Google Sheets</a> สร้างไฟล์ใหม่ว่างๆ</li>
+                                        <li>เมนู <b>ส่วนขยาย (Extensions)</b> > <b>Apps Script</b></li>
+                                        <li>ลบโค้ดเดิมออกทั้งหมด แล้วก๊อปปี้โค้ดด้านล่างนี้ไปวาง</li>
+                                        <li>กด <b>นำไปใช้งาน (Deploy)</b> > <b>การนำไปใช้งานรายการใหม่ (New deployment)</b></li>
+                                        <li>เลือกประเภทเป็น <b>เว็บแอป (Web App)</b>, สิทธิ์เข้าถึงเป็น <b>ทุกคน (Anyone)</b> แล้วกด <b>Deploy</b></li>
+                                        <li>ก๊อปปี้ <b>Web App URL</b> นำมาวางในช่องด้านล่าง แล้วกดบันทึก</li>
+                                    </ol>
+                                </div>
+
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-sm font-bold text-gray-600">โค้ดสำหรับวางใน Apps Script:</label>
+                                        <button @click="copyGasCode" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-lg font-bold">คัดลอกโค้ด 📋</button>
+                                    </div>
+                                    <textarea readonly class="w-full h-32 p-3 bg-gray-800 text-green-400 font-mono text-xs rounded-xl">{{ gasCodeText }}</textarea>
+                                </div>
+
+                                <div>
+                                    <label class="text-sm font-bold text-gray-600 mb-1 block">Web App URL ของคุณ:</label>
+                                    <div class="flex gap-2">
+                                        <input type="url" v-model="tempWebAppUrl" placeholder="https://script.google.com/macros/s/..." class="flex-1 p-3 border-2 rounded-xl focus:outline-none focus:border-emerald-500" />
+                                        <button @click="saveWebAppUrl" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 rounded-xl shadow-md transition-colors">บันทึก & เชื่อมต่อ</button>
+                                    </div>
+                                    <p v-if="webAppUrl" class="text-green-600 text-sm mt-2 font-bold">✅ เชื่อมต่อฐานข้อมูลออนไลน์เรียบร้อยแล้ว!</p>
+                                </div>
+                            </div>
+
+                            <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: settings.themeColor + '40' }">
+                                <h3 class="font-bold text-2xl mb-6 flex items-center gap-2" :style="{ color: settings.themeColor }">🎨 เลือกโทนสีแอป</h3>
+                                <div class="flex flex-wrap gap-4">
+                                    <button v-for="c in themeColors" :key="c.hex"
+                                        @click="updateSetting('themeColor', c.hex)"
+                                        class="w-14 h-14 rounded-full shadow-lg transition-transform hover:scale-110"
+                                        :class="settings.themeColor === c.hex ? 'ring-4 ring-offset-4 ring-gray-300 scale-110' : ''"
+                                        :style="{ backgroundColor: c.hex }" :title="c.name">
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <h3 class="font-bold text-xl mb-4 flex items-center gap-2 text-gray-700">👩‍🏫 รูปคุณครู (ฝั่งซ้าย)</h3>
+                                    <div class="flex flex-col items-center gap-4">
+                                        <div v-if="settings.teacher1" class="relative">
+                                            <img :src="settings.teacher1" alt="Teacher 1" class="h-40 object-contain drop-shadow-lg" />
+                                            <button @click="updateSetting('teacher1', '')" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 shadow hover:bg-red-600">🗑️</button>
+                                        </div>
+                                        <div v-else class="h-40 w-32 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400">ว่าง</div>
+                                        <label class="cursor-pointer w-full text-center py-3 rounded-xl border-2 border-dashed hover:bg-gray-50 transition-colors font-bold text-sm" :style="{ borderColor: settings.themeColor, color: settings.themeColor }">
+                                            อัปโหลดรูปครู (ซ้าย)
+                                            <input type="file" accept="image/*" class="hidden" @change="uploadImage($event, 'teacher1')" />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <h3 class="font-bold text-xl mb-4 flex items-center gap-2 text-gray-700">👨‍🏫 รูปคุณครู (ฝั่งขวา)</h3>
+                                    <div class="flex flex-col items-center gap-4">
+                                        <div v-if="settings.teacher2" class="relative">
+                                            <img :src="settings.teacher2" alt="Teacher 2" class="h-40 object-contain drop-shadow-lg" />
+                                            <button @click="updateSetting('teacher2', '')" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 shadow hover:bg-red-600">🗑️</button>
+                                        </div>
+                                        <div v-else class="h-40 w-32 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400">ว่าง</div>
+                                        <label class="cursor-pointer w-full text-center py-3 rounded-xl border-2 border-dashed hover:bg-gray-50 transition-colors font-bold text-sm" :style="{ borderColor: settings.themeColor, color: settings.themeColor }">
+                                            อัปโหลดรูปครู (ขวา)
+                                            <input type="file" accept="image/*" class="hidden" @change="uploadImage($event, 'teacher2')" />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: settings.themeColor + '40' }">
+                                <h3 class="font-bold text-xl mb-4 flex items-center gap-2 text-gray-700">🖼️ อัปโหลดรูปภาพพื้นหลัง</h3>
+                                <div class="space-y-4">
+                                    <img v-if="settings.bgImage" :src="settings.bgImage" alt="Background" class="w-full h-48 object-cover rounded-2xl shadow-inner border-2 border-gray-200" />
+                                    <div>
+                                        <label class="cursor-pointer flex items-center justify-center gap-2 w-full py-4 rounded-xl border-2 border-dashed hover:bg-gray-50 transition-colors font-bold text-lg" :style="{ borderColor: settings.themeColor, color: settings.themeColor }">
+                                            เลือกรูปภาพพื้นหลังจากเครื่อง
+                                            <input type="file" accept="image/*" class="hidden" @change="uploadImage($event, 'bgImage')" />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </transition>
+
+                <!-- 3. STUDENT DASHBOARD -->
+                <transition name="slide-up">
+                    <div v-if="user && user.role === 'student' && !isLoading" class="space-y-8 flex-1">
+                        
+                        <div class="p-6 md:p-8 rounded-3xl flex justify-between items-center shadow-inner" :style="{ backgroundColor: settings.themeColor + '20' }">
+                            <div>
+                                <h2 class="text-3xl font-extrabold" :style="{ color: settings.themeColor }">สวัสดีจ้า, {{ user.name }} 👋</h2>
+                                <p class="text-gray-700 mt-2 font-medium text-lg">อย่าลืมจดและเคลียร์การบ้านนะ สู้ๆ! ✌️</p>
+                            </div>
+                            <div class="text-[4rem] cute-float hidden sm:block">📝</div>
+                        </div>
+
+                        <!-- Form จดการบ้าน -->
+                        <div class="p-6 md:p-8 rounded-3xl border-4 bg-white shadow-sm relative overflow-hidden" :style="{ borderColor: settings.themeColor + '40' }">
+                            <div class="absolute top-4 right-4 text-3xl opacity-20">✍️</div>
+                            <h3 class="font-bold text-2xl mb-6 text-gray-700">จดการบ้านใหม่</h3>
+                            <form @submit.prevent="addTask" class="grid md:grid-cols-4 gap-4">
+                                <div class="md:col-span-1">
+                                    <label class="text-sm font-bold text-gray-500 mb-2 block">วันที่ส่ง</label>
+                                    <input type="date" v-model="newTask.date" required class="w-full p-3 rounded-xl border-2 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
+                                </div>
+                                <div class="md:col-span-1">
+                                    <label class="text-sm font-bold text-gray-500 mb-2 block">วิชา</label>
+                                    <input type="text" v-model="newTask.subject" placeholder="เช่น คณิตศาสตร์" required class="w-full p-3 rounded-xl border-2 focus:outline-none font-bold" :style="{ borderColor: settings.themeColor + '40' }" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="text-sm font-bold text-gray-500 mb-2 block">รายละเอียด</label>
+                                    <div class="flex flex-col sm:flex-row gap-3">
+                                        <input type="text" v-model="newTask.description" placeholder="เช่น ทำแบบฝึกหัดหน้า 1-5" required class="flex-1 p-3 rounded-xl border-2 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
+                                        <button type="submit" class="text-white font-bold px-6 py-3 rounded-xl shadow-md whitespace-nowrap transition-transform hover:scale-105 text-lg" :style="{ backgroundColor: settings.themeColor }">จดไว้! 📌</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="flex items-center gap-3 border-b-4 pb-2" :style="{ borderColor: settings.themeColor + '20' }">
+                            <h3 class="font-bold text-2xl text-gray-700">รายการการบ้านของฉัน 📚</h3>
+                        </div>
+                        
+                        <div v-if="mySortedTasks.length === 0" class="text-center py-16 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                            <div class="text-6xl mb-4 cute-float">🎉</div>
+                            <div class="text-gray-500 text-xl font-bold">ว่างเปล่า! ยังไม่ได้จดการบ้านเลยจ้า</div>
+                        </div>
+                        
+                        <div v-else class="grid gap-6 md:grid-cols-2">
+                            <div v-for="t in mySortedTasks" :key="t.id" 
+                                 class="flex flex-col p-6 rounded-3xl border-4 transition-all relative group"
+                                 :class="t.status === 'done' ? 'bg-green-50 shadow-sm' : 'bg-white shadow-md hover:shadow-lg'"
+                                 :style="{ borderColor: t.status === 'done' ? '#bbf7d0' : settings.themeColor + '40' }">
+                                
+                                <button @click="deleteTask(t.id)" class="absolute top-4 right-4 text-red-400 bg-red-50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" title="ลบ">🗑️</button>
+                                
+                                <div class="flex justify-between items-start mb-3">
+                                    <span class="text-sm font-bold px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 shadow-sm">{{ t.date }}</span>
+                                    <span v-if="t.status === 'done'" class="text-green-600 font-bold flex items-center gap-1 bg-green-100 px-3 py-1 rounded-full">✅ ส่งแล้ว</span>
+                                </div>
+                                <h4 class="font-extrabold text-2xl mb-2 pr-8" :style="{ color: t.status === 'done' ? '#9ca3af' : settings.themeColor }">{{ t.subject }}</h4>
+                                <p class="text-gray-600 text-lg mb-6 font-medium">{{ t.description }}</p>
+                                
+                                <div v-if="t.status !== 'done'" class="flex gap-3 mt-auto">
+                                    <button @click="markTaskDone(t.id, null)" class="flex-1 py-3 rounded-2xl font-bold transition-colors border-2 hover:bg-gray-50 text-base shadow-sm" :style="{ borderColor: settings.themeColor, color: settings.themeColor }">
+                                        ทำเสร็จแล้ว ✅
+                                    </button>
+                                    <label class="flex-1 py-3 rounded-2xl font-bold text-white transition-transform hover:scale-105 shadow-md flex items-center justify-center gap-2 text-base cursor-pointer" :style="{ backgroundColor: settings.themeColor }">
+                                        ถ่ายรูปส่ง 📷
+                                        <input type="file" accept="image/*" class="hidden" @change="uploadTaskPhoto($event, t.id)" />
+                                    </label>
+                                </div>
+                                <div v-else class="mt-auto pt-4 border-t-2 border-green-100">
+                                    <div v-if="t.photo" class="relative inline-block hover:scale-105 transition-transform">
+                                        <img :src="t.photo" alt="งานของฉัน" class="w-24 h-24 object-cover rounded-2xl border-4 shadow-sm" :style="{ borderColor: settings.themeColor + '40' }" />
+                                    </div>
+                                    <p v-else class="text-green-600 font-bold">ส่งงานเรียบร้อยแล้ว เยี่ยมมาก! 🌟</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </transition>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic (Vue 3) -->
+    <script>
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                // --- State ---
+                const user = ref(null);
+                const loginCode = ref('');
+                const isLoading = ref(false);
+                
+                // Admin State
+                const adminTabs = [
+                    { id: 'attendance', label: 'เช็คชื่อ', icon: '📝' },
+                    { id: 'reports', label: 'รายงานการบ้าน', icon: '📖' },
+                    { id: 'students', label: 'จัดการนักเรียน', icon: '👥' },
+                    { id: 'settings', label: 'ตั้งค่าระบบ', icon: '⚙️' },
+                ];
+                const currentAdminTab = ref('attendance');
+                const attendanceDate = ref(new Date().toISOString().split('T')[0]);
+                const reportDate = ref(new Date().toISOString().split('T')[0]);
+                const newStudent = reactive({ name: '', code: '' });
+                const gasCodeText = ref('');
+                
+                // ฝัง URL เป็นค่าเริ่มต้น เพื่อให้ใช้งานออนไลน์ได้ทันที
+                const defaultGasUrl = 'https://script.google.com/macros/s/AKfycbxBcyVQLXwucwoLsMLbA-JjfBMKzJIBLhu5Uy5ub-ZgwA2h9jnwHpTQPSgkcgDhhvov5w/exec';
+                const tempWebAppUrl = ref(localStorage.getItem('gas_url') || defaultGasUrl);
+                const webAppUrl = ref(localStorage.getItem('gas_url') || defaultGasUrl);
+
+                // Student State
+                const newTask = reactive({ date: new Date().toISOString().split('T')[0], subject: '', description: '' });
+
+                // Data State
+                const students = ref([
+                    { id: 'std1', name: 'น้องตัวอย่าง 1', code: 'std01' } // ข้อมูลเริ่มต้นกรณีไม่มี db
+                ]);
+                const tasks = ref([]);
+                const attendance = ref([]); // [{ id, date, studentId, status }]
+                const settings = reactive({
+                    themeColor: '#f472b6',
+                    bgImage: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?q=80&w=2029',
+                    teacher1: '',
+                    teacher2: ''
+                });
+
+                const themeColors = [
+                    { name: 'Pink', hex: '#f472b6' }, { name: 'Purple', hex: '#a855f7' },
+                    { name: 'Blue', hex: '#60a5fa' }, { name: 'Green', hex: '#34d399' },
+                    { name: 'Orange', hex: '#fb923c' }, { name: 'Yellow', hex: '#facc15' },
+                    { name: 'Mint', hex: '#14b8a6' }, { name: 'Rose', hex: '#fb7185' },
+                ];
+
+                // Modal UI
+                const modal = reactive({ isOpen: false, title: '', message: '', type: 'alert', onConfirm: null });
+                const showAlert = (title, message) => {
+                    modal.isOpen = true; modal.title = title; modal.message = message; modal.type = 'alert';
+                    modal.onConfirm = () => { modal.isOpen = false; };
+                };
+                const showConfirm = (title, message, callback) => {
+                    modal.isOpen = true; modal.title = title; modal.message = message; modal.type = 'confirm';
+                    modal.onConfirm = () => { callback(); modal.isOpen = false; };
+                };
+                const closeModal = () => { modal.isOpen = false; };
+
+                // --- Helpers ---
+                const backgroundStyle = computed(() => {
+                    document.documentElement.style.setProperty('--theme-primary', settings.themeColor);
+                    return {
+                        backgroundImage: `url(${settings.bgImage})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundAttachment: 'fixed'
+                    };
+                });
+
+                const mySortedTasks = computed(() => {
+                    if (!user.value || user.value.role !== 'student') return [];
+                    return tasks.value.filter(t => t.studentId === user.value.id)
+                                      .sort((a, b) => new Date(b.date) - new Date(a.date));
+                });
+
+                const getTasksForStudent = (studentId) => {
+                    return tasks.value.filter(t => t.studentId === studentId && t.date === reportDate.value);
+                };
+
+                const isPresent = (studentId) => {
+                    const record = attendance.value.find(a => a.date === attendanceDate.value && a.studentId === studentId);
+                    return record ? record.status === 'true' : false;
+                };
+
+                // --- Google Sheets API Integration ---
+                const apiCall = async (payload) => {
+                    if (!webAppUrl.value) return; // ถ้าไม่ได้ต่อเว็บแอป ทำงานแบบออฟไลน์ไปก่อน
+                    try {
+                        // ส่งเป็น text/plain ป้องกันปัญหา CORS Preflight ใน Apps Script
+                        fetch(webAppUrl.value, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(payload)
+                        }).catch(e => console.log("Background sync error:", e));
+                    } catch (error) {
+                        console.error('API Error:', error);
+                    }
+                };
+
+                const fetchAllData = async () => {
+                    if (!webAppUrl.value) return;
+                    isLoading.value = true;
+                    try {
+                        const res = await fetch(webAppUrl.value, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action: 'getData' })
+                        });
+                        const data = await res.json();
+                        if(data.status === 'success') {
+                            if(data.students) students.value = data.students;
+                            if(data.tasks) tasks.value = data.tasks;
+                            if(data.attendance) attendance.value = data.attendance;
+                            if(data.settings) {
+                                data.settings.forEach(s => {
+                                    if(settings.hasOwnProperty(s.id)) settings[s.id] = s.value;
+                                });
+                            }
+                        }
+                    } catch(err) {
+                        console.error("Fetch data failed", err);
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                const saveWebAppUrl = () => {
+                    localStorage.setItem('gas_url', tempWebAppUrl.value);
+                    webAppUrl.value = tempWebAppUrl.value;
+                    showAlert('สำเร็จ', 'บันทึก URL ระบบฐานข้อมูลเรียบร้อยแล้ว');
+                    fetchAllData();
+                };
+
+                const copyGasCode = () => {
+                    navigator.clipboard.writeText(gasCodeText.value).then(() => {
+                        showAlert('คัดลอกแล้ว', 'นำโค้ดนี้ไปวางใน Google Apps Script ได้เลยจ้า');
+                    });
+                };
+
+                // --- App Actions ---
+                const login = () => {
+                    const code = loginCode.value.trim();
+                    if (code === 'nannoonadmin') {
+                        user.value = { role: 'admin' };
+                    } else {
+                        const std = students.value.find(s => s.code === code);
+                        if (std) {
+                            user.value = { role: 'student', id: std.id, name: std.name };
+                        } else {
+                            showAlert('อุ๊ปส์!', 'รหัสไม่ถูกต้องค่ะ ลองพิมพ์ใหม่อีกครั้งน้า 🥺');
+                            return;
+                        }
+                    }
+                    loginCode.value = '';
+                };
+
+                const logout = () => {
+                    user.value = null;
+                };
+
+                const addStudent = () => {
+                    if(students.value.find(s => s.code === newStudent.code)) {
+                        showAlert('ซ้ำแล้วจ้า', 'รหัสนี้มีคนใช้แล้ว เปลี่ยนรหัสใหม่น้า!'); return;
+                    }
+                    const id = 'std_' + Date.now();
+                    const stdData = { id, name: newStudent.name, code: newStudent.code };
+                    students.value.push(stdData);
+                    showAlert('เย้!', 'เพิ่มรายชื่อนักเรียนเรียบร้อยแล้ว 🎊');
+                    newStudent.name = ''; newStudent.code = '';
+                    
+                    apiCall({ action: 'saveStudent', ...stdData });
+                };
+
+                const deleteStudent = (id) => {
+                    showConfirm('ลบข้อมูล?', 'แน่ใจนะคะว่าจะลบนักเรียนคนนี้?', () => {
+                        students.value = students.value.filter(s => s.id !== id);
+                        apiCall({ action: 'deleteStudent', id });
+                    });
+                };
+
+                const toggleAttendance = (studentId) => {
+                    const curr = isPresent(studentId);
+                    const newStatus = curr ? 'false' : 'true';
+                    
+                    const existingIdx = attendance.value.findIndex(a => a.date === attendanceDate.value && a.studentId === studentId);
+                    if(existingIdx >= 0) {
+                        attendance.value[existingIdx].status = newStatus;
+                    } else {
+                        attendance.value.push({ id: attendanceDate.value+'_'+studentId, date: attendanceDate.value, studentId, status: newStatus });
+                    }
+
+                    apiCall({ action: 'updateAttendance', date: attendanceDate.value, studentId, status: newStatus });
+                };
+
+                const addTask = () => {
+                    const id = 'task_' + Date.now();
+                    const taskData = { 
+                        id, studentId: user.value.id, 
+                        date: newTask.date, subject: newTask.subject, 
+                        description: newTask.description, status: 'pending', photo: '' 
+                    };
+                    tasks.value.push(taskData);
+                    newTask.subject = ''; newTask.description = '';
+                    showAlert('เก่งมาก!', 'จดการบ้านเรียบร้อยแล้ว สู้ๆ นะคะ ✌️');
+                    
+                    apiCall({ action: 'saveTask', ...taskData });
+                };
+
+                const markTaskDone = (id, photoBase64) => {
+                    const task = tasks.value.find(t => t.id === id);
+                    if(task) {
+                        task.status = 'done';
+                        task.photo = photoBase64 || '';
+                        apiCall({ action: 'updateTask', id, data: { status: 'done', photo: photoBase64 || '' } });
+                    }
+                };
+
+                const deleteTask = (id) => {
+                    showConfirm('ลบการบ้าน?', 'จะลบการบ้านชิ้นนี้ใช่ไหมจ๊ะ?', () => {
+                        tasks.value = tasks.value.filter(t => t.id !== id);
+                        apiCall({ action: 'deleteTask', id });
+                    });
+                };
+
+                const updateSetting = (key, value) => {
+                    settings[key] = value;
+                    apiCall({ action: 'updateSettings', key, value });
+                };
+
+                // --- Image Processing ---
+                const processImage = (file) => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                const MAX_SIZE = 800; // ลดขนาดลงเพื่อไม่ให้ข้อมูล GAS ล้น
+                                let width = img.width;
+                                let height = img.height;
+                                if (width > height && width > MAX_SIZE) {
+                                    height *= MAX_SIZE / width; width = MAX_SIZE;
+                                } else if (height > MAX_SIZE) {
+                                    width *= MAX_SIZE / height; height = MAX_SIZE;
+                                }
+                                canvas.width = width; canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                resolve(canvas.toDataURL('image/jpeg', 0.6)); // บีบอัด 60%
+                            };
+                            img.src = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                };
+
+                const uploadImage = async (event, settingKey) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const base64 = await processImage(file);
+                        updateSetting(settingKey, base64);
+                    }
+                };
+
+                const uploadTaskPhoto = async (event, taskId) => {
+                    const file = event.target.files[0];
+                    if(file) {
+                        const base64 = await processImage(file);
+                        markTaskDone(taskId, base64);
+                    }
+                };
+
+                // --- Exports (ใช้ HTML2Canvas / CSV / Blob) ---
+                const exportJpg = (elementId, filename) => {
+                    const el = document.getElementById(elementId);
+                    window.html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = filename + '.jpg';
+                        link.href = canvas.toDataURL('image/jpeg');
+                        link.click();
+                    });
+                };
+
+                const exportExcelAttendance = () => {
+                    let csv = "\uFEFFลำดับ,ชื่อนักเรียน,สถานะ\n";
+                    students.value.forEach((std, i) => {
+                        csv += `"${i+1}","${std.name}","${isPresent(std.id) ? 'มาเรียน' : 'ขาดเรียน'}"\n`;
+                    });
+                    downloadBlob(csv, `การมาเรียน_${attendanceDate.value}.csv`, 'text/csv;charset=utf-8;');
+                };
+
+                const exportExcelReport = () => {
+                    let csv = "\uFEFFชื่อนักเรียน,วิชา,รายละเอียดงาน,สถานะ\n";
+                    students.value.forEach(std => {
+                        const stdTasks = getTasksForStudent(std.id);
+                        if(stdTasks.length === 0) {
+                            csv += `"${std.name}","-","-","ไม่มีการบ้าน"\n`;
+                        } else {
+                            stdTasks.forEach(t => {
+                                csv += `"${std.name}","${t.subject}","${t.description}","${t.status === 'done' ? 'เสร็จแล้ว' : 'ยังไม่เสร็จ'}"\n`;
+                            });
+                        }
+                    });
+                    downloadBlob(csv, `รายงานการบ้าน_${reportDate.value}.csv`, 'text/csv;charset=utf-8;');
+                };
+
+                const exportDoc = (elementId, filename) => {
+                    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Report</title><style>body { font-family: 'Tahoma', sans-serif; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } img { max-width: 150px; height: auto; }</style></head><body>";
+                    const footer = "</body></html>";
+                    const el = document.getElementById(elementId);
+                    const html = header + el.innerHTML + footer;
+                    downloadBlob('\ufeff' + html, filename + '.doc', 'application/msword');
+                };
+
+                const downloadBlob = (content, filename, type) => {
+                    const blob = new Blob([content], { type });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    link.click();
+                };
+
+                // Lifecycle
+                onMounted(() => {
+                    gasCodeText.value = document.getElementById('gas-script-template').innerText.trim();
+                    fetchAllData();
+                });
+
+                return {
+                    user, loginCode, login, logout, isLoading,
+                    adminTabs, currentAdminTab, attendanceDate, reportDate,
+                    students, newStudent, addStudent, deleteStudent,
+                    tasks, mySortedTasks, addTask, markTaskDone, deleteTask, getTasksForStudent, uploadTaskPhoto,
+                    attendance, toggleAttendance, isPresent,
+                    settings, themeColors, updateSetting, uploadImage,
+                    modal, showAlert, showConfirm, closeModal, backgroundStyle,
+                    exportJpg, exportExcelAttendance, exportExcelReport, exportDoc,
+                    gasCodeText, tempWebAppUrl, webAppUrl, saveWebAppUrl, copyGasCode
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
