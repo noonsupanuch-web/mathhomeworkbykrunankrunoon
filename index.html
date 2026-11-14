@@ -246,25 +246,44 @@ function updateOrAppend(sheet, id, rowData) {
                             </div>
 
                             <form @submit.prevent="login" class="space-y-6">
-                                <div class="text-left">
-                                    <label class="block text-sm font-bold mb-2 text-gray-700">
-                                        {{ loginMode === 'student' ? 'กรอกรหัสประจำตัวนักเรียน (รับที่ครูผู้สอน)' : 'กรอกรหัสผ่านคุณครู (nannoonadmin)' }}
-                                    </label>
-                                    <div class="relative">
-                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">🔑</span>
-                                        <input :type="loginMode === 'admin' ? 'password' : 'text'" v-model="loginCode" 
-                                            :placeholder="loginMode === 'student' ? 'ใส่รหัสของตัวเองที่นี่... เช่น std01' : 'ใส่รหัสผ่านคุณครู...'" required
-                                            class="w-full pl-12 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium"
-                                            :style="{ borderColor: settings.themeColor + '40' }" />
+                                <div v-if="loginMode === 'student'" class="text-left space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-bold mb-2 text-gray-700">เลือกชื่อของตัวเอง</label>
+                                        <select v-model="selectedStudentId" required class="w-full px-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium cursor-pointer" :style="{ borderColor: settings.themeColor + '40' }">
+                                            <option value="" disabled>-- คลิกเพื่อเลือกชื่อ --</option>
+                                            <option v-for="std in students" :key="std.id" :value="std.id">{{ std.name }}</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-bold mb-2 text-gray-700">รหัสผ่าน (สอบถามคุณครู)</label>
+                                        <div class="relative">
+                                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">🔑</span>
+                                            <input type="password" v-model="loginCode" placeholder="เช่น math01" required
+                                                class="w-full pl-12 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium"
+                                                :style="{ borderColor: settings.themeColor + '40' }" />
+                                        </div>
                                     </div>
                                 </div>
-                                <button type="submit" class="w-full text-white font-bold text-lg py-4 rounded-2xl transition-transform hover:scale-105 shadow-lg flex justify-center items-center gap-2"
+
+                                <div v-if="loginMode === 'admin'" class="text-left space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-bold mb-2 text-gray-700">กรอกรหัสผ่านคุณครู (nannoonadmin)</label>
+                                        <div class="relative">
+                                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">🔑</span>
+                                            <input type="password" v-model="loginCode" placeholder="ใส่รหัสผ่านคุณครู..." required
+                                                class="w-full pl-12 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium"
+                                                :style="{ borderColor: settings.themeColor + '40' }" />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="w-full text-white font-bold text-lg py-4 rounded-2xl transition-transform hover:scale-105 shadow-lg flex justify-center items-center gap-2 mt-4"
                                     :style="{ backgroundColor: settings.themeColor }">
                                     เข้าสู่ระบบ ✨
                                 </button>
 
                                 <p v-if="loginMode === 'student'" class="text-center text-sm mt-4 font-bold" :style="{ color: settings.themeColor }">
-                                    * หมายเหตุ: หากยังไม่มีรหัส ให้คุณครูเพิ่มรายชื่อให้ก่อนนะคะ
+                                    * หมายเหตุ: หากยังไม่มีชื่อ ให้คุณครูเพิ่มรายชื่อให้ก่อนนะคะ
                                 </p>
                             </form>
                         </div>
@@ -381,8 +400,8 @@ function updateOrAppend(sheet, id, rowData) {
                                             <input type="text" v-model="newStudent.name" placeholder="เช่น น้องสมหญิง" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
                                         </div>
                                         <div>
-                                            <label class="text-sm font-bold text-gray-500 mb-1 block">รหัสผ่านสำหรับเข้าเว็บ</label>
-                                            <input type="text" v-model="newStudent.code" placeholder="เช่น std01" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
+                                            <label class="text-sm font-bold text-gray-500 mb-1 block">รหัสผ่านสำหรับเข้าเว็บ (กำหนดเองได้)</label>
+                                            <input type="text" v-model="newStudent.code" placeholder="เช่น math01" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
                                         </div>
                                         <button type="submit" class="w-full text-white font-bold py-3 rounded-xl shadow-md transition-transform hover:scale-105 text-lg" :style="{ backgroundColor: settings.themeColor }">เพิ่มข้อมูล ✨</button>
                                     </form>
@@ -608,6 +627,7 @@ function updateOrAppend(sheet, id, rowData) {
                 const user = ref(null);
                 const loginMode = ref('student');
                 const loginCode = ref('');
+                const selectedStudentId = ref('');
                 const isLoading = ref(false);
                 
                 // Admin State
@@ -620,7 +640,7 @@ function updateOrAppend(sheet, id, rowData) {
                 const currentAdminTab = ref('attendance');
                 const attendanceDate = ref(new Date().toISOString().split('T')[0]);
                 const reportDate = ref(new Date().toISOString().split('T')[0]);
-                const newStudent = reactive({ name: '', code: '' });
+                const newStudent = reactive({ name: '', code: 'math01' });
                 const gasCodeText = ref('');
                 
                 // ฝัง URL เป็นค่าเริ่มต้น เพื่อให้ใช้งานออนไลน์ได้ทันที
@@ -633,7 +653,7 @@ function updateOrAppend(sheet, id, rowData) {
 
                 // Data State
                 const students = ref([
-                    { id: 'std1', name: 'น้องตัวอย่าง 1', code: 'std01' } // ข้อมูลเริ่มต้นกรณีไม่มี db
+                    { id: 'std1', name: 'น้องตัวอย่าง 1', code: 'math01' } // ข้อมูลเริ่มต้นกรณีไม่มี db
                 ]);
                 const tasks = ref([]);
                 const attendance = ref([]); // [{ id, date, studentId, status }]
@@ -756,18 +776,23 @@ function updateOrAppend(sheet, id, rowData) {
                         }
                     } else {
                         if (students.value.length === 0) {
-                            showAlert('ยังไม่มีข้อมูลนักเรียน', 'ตอนนี้ในระบบยังไม่มีชื่อนักเรียนเลยจ้า กรุณาแจ้งให้คุณครูเพิ่มรายชื่อและรหัสให้ก่อนนะคะ 🥺');
+                            showAlert('ยังไม่มีข้อมูลนักเรียน', 'ตอนนี้ในระบบยังไม่มีชื่อนักเรียนเลยจ้า กรุณาแจ้งให้คุณครูเพิ่มรายชื่อให้ก่อนนะคะ 🥺');
                             return;
                         }
-                        const std = students.value.find(s => s.code === code);
-                        if (std) {
+                        if (!selectedStudentId.value) {
+                            showAlert('ลืมเลือกชื่อ!', 'กรุณาคลิกเลือกชื่อของตัวเองในช่องด้านบนก่อนนะคะ 🥺');
+                            return;
+                        }
+                        const std = students.value.find(s => s.id === selectedStudentId.value);
+                        if (std && std.code === code) {
                             user.value = { role: 'student', id: std.id, name: std.name };
                         } else {
-                            showAlert('อุ๊ปส์!', 'ไม่พบรหัสนักเรียนนี้ค่ะ! พิมพ์ผิดหรือเปล่าเอ่ย? 🥺');
+                            showAlert('อุ๊ปส์!', 'รหัสผ่านไม่ถูกต้องค่ะ! ลองสอบถามรหัสจากคุณครูดูน้า 🥺');
                             return;
                         }
                     }
                     loginCode.value = '';
+                    selectedStudentId.value = '';
                 };
 
                 const logout = () => {
@@ -775,14 +800,14 @@ function updateOrAppend(sheet, id, rowData) {
                 };
 
                 const addStudent = () => {
-                    if(students.value.find(s => s.code === newStudent.code)) {
-                        showAlert('ซ้ำแล้วจ้า', 'รหัสนี้มีคนใช้แล้ว เปลี่ยนรหัสใหม่น้า!'); return;
+                    if(students.value.find(s => s.name === newStudent.name)) {
+                        showAlert('ซ้ำแล้วจ้า', 'ชื่อนี้มีในระบบแล้ว ใส่ชื่อจริงหรือนามสกุลต่อท้ายเพิ่มน้า!'); return;
                     }
                     const id = 'std_' + Date.now();
                     const stdData = { id, name: newStudent.name, code: newStudent.code };
                     students.value.push(stdData);
                     showAlert('เย้!', 'เพิ่มรายชื่อนักเรียนเรียบร้อยแล้ว 🎊');
-                    newStudent.name = ''; newStudent.code = '';
+                    newStudent.name = ''; newStudent.code = 'math01';
                     
                     apiCall({ action: 'saveStudent', ...stdData });
                 };
@@ -921,7 +946,7 @@ function updateOrAppend(sheet, id, rowData) {
                 };
 
                 const exportDoc = (elementId, filename) => {
-                    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Report</title><style>body { font-family: 'Tahoma', sans-serif; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } img { max-width: 250px; height: auto; border-radius: 8px; }</style></head><body>";
+                    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Report</title><style>body { font-family: 'Tahoma', sans-serif; } table { border-collapse: collapse; width: 100%; margin-bottom: 20px; } th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; } th { background-color: #fce7f3; } img { width: 150px; height: auto; border-radius: 8px; }</style></head><body>";
                     const footer = "</body></html>";
                     const el = document.getElementById(elementId);
                     const html = header + "<h2>" + filename.replace(/_/g, ' ') + "</h2>" + el.innerHTML + footer;
@@ -943,7 +968,7 @@ function updateOrAppend(sheet, id, rowData) {
                 });
 
                 return {
-                    user, loginMode, loginCode, login, logout, isLoading,
+                    user, loginMode, loginCode, selectedStudentId, login, logout, isLoading,
                     adminTabs, currentAdminTab, attendanceDate, reportDate,
                     students, newStudent, addStudent, deleteStudent,
                     tasks, mySortedTasks, addTask, markTaskDone, deleteTask, getTasksForStudent, uploadTaskPhoto,
