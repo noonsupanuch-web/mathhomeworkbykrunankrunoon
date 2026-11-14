@@ -279,10 +279,11 @@
                                         <table class="w-full text-left border-collapse border-2 rounded-xl overflow-hidden border-gray-100">
                                             <thead>
                                                 <tr class="border-b-2" :style="{ backgroundColor: settings.themeColor + '15', borderColor: settings.themeColor + '20' }">
-                                                    <th class="p-3 w-1/4">วิชา</th>
-                                                    <th class="p-3 w-1/3">รายละเอียด</th>
+                                                    <th class="p-3 w-1/5">วิชา</th>
+                                                    <th class="p-3 w-1/4">รายละเอียด</th>
                                                     <th class="p-3 w-1/6 text-center">สถานะ</th>
-                                                    <th class="p-3 w-1/4 text-center">รูปถ่ายงาน (ถ้ามี)</th>
+                                                    <th class="p-3 w-1/5 text-center">รูปถ่ายงาน (ถ้ามี)</th>
+                                                    <th class="p-3 w-1/6 text-center" data-html2canvas-ignore="true">จัดการ</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -298,6 +299,16 @@
                                                             <img :src="t.photo" alt="รูปการบ้าน" class="w-20 h-20 md:w-24 md:h-24 object-cover rounded-xl shadow-sm border-2" :style="{ borderColor: settings.themeColor + '40' }" />
                                                         </a>
                                                         <span v-else class="text-gray-300 text-sm">-</span>
+                                                    </td>
+                                                    <td class="p-3 text-center" data-html2canvas-ignore="true">
+                                                        <div class="flex flex-col gap-2 justify-center items-center">
+                                                            <button @click="adminToggleTaskStatus(t)" class="text-xs font-bold px-3 py-1.5 rounded-lg border-2 hover:bg-gray-100 transition-colors" :style="{ borderColor: settings.themeColor, color: settings.themeColor }">
+                                                                สลับสถานะ
+                                                            </button>
+                                                            <button @click="deleteTask(t.id)" class="text-xs font-bold px-3 py-1.5 rounded-lg border-2 border-red-200 text-red-500 hover:bg-red-50 transition-colors">
+                                                                ลบงาน
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -336,6 +347,7 @@
                                     <table class="w-full text-left">
                                         <thead :style="{ backgroundColor: settings.themeColor + '15' }">
                                             <tr>
+                                                <th class="p-4 font-bold text-gray-700 text-lg">โปรไฟล์</th>
                                                 <th class="p-4 font-bold text-gray-700 text-lg">ชื่อเล่น</th>
                                                 <th class="p-4 font-bold text-gray-700 text-lg">ชื่อ-สกุล</th>
                                                 <th class="p-4 font-bold text-gray-700 text-lg">รหัสเข้าเว็บ</th>
@@ -344,6 +356,9 @@
                                         </thead>
                                         <tbody>
                                             <tr v-for="std in students" :key="std.id" class="border-b hover:bg-gray-50 transition-colors">
+                                                <td class="p-4">
+                                                    <img :src="settings['profile_' + std.id] || 'https://api.dicebear.com/7.x/notionists/svg?seed=' + std.id" class="w-12 h-12 rounded-full object-cover border-2" :style="{ borderColor: settings.themeColor }" />
+                                                </td>
                                                 <td class="p-4 font-bold text-gray-700">{{ std.name }}</td>
                                                 <td class="p-4 text-gray-600">{{ std.fullname || '-' }}</td>
                                                 <td class="p-4 font-mono font-bold text-gray-500">{{ std.code }}</td>
@@ -352,7 +367,7 @@
                                                 </td>
                                             </tr>
                                             <tr v-if="students.length === 0">
-                                                <td colspan="3" class="text-center p-8 text-gray-400 font-medium">ยังไม่มีนักเรียนในระบบจ้า</td>
+                                                <td colspan="5" class="text-center p-8 text-gray-400 font-medium">ยังไม่มีนักเรียนในระบบจ้า</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -366,13 +381,22 @@
 
                             <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: settings.themeColor + '40' }">
                                 <h3 class="font-bold text-2xl mb-6 flex items-center gap-2" :style="{ color: settings.themeColor }">🎨 เลือกโทนสีแอป</h3>
-                                <div class="flex flex-wrap gap-4">
-                                    <button v-for="c in themeColors" :key="c.hex"
-                                        @click="updateSetting('themeColor', c.hex)"
-                                        class="w-14 h-14 rounded-full shadow-lg transition-transform hover:scale-110"
-                                        :class="settings.themeColor === c.hex ? 'ring-4 ring-offset-4 ring-gray-300 scale-110' : ''"
-                                        :style="{ backgroundColor: c.hex }" :title="c.name">
-                                    </button>
+                                <div class="flex flex-col gap-6">
+                                    <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border-2" :style="{ borderColor: settings.themeColor + '20' }">
+                                        <input type="color" :value="settings.themeColor" @input="updateSetting('themeColor', $event.target.value)" class="w-16 h-16 rounded-xl cursor-pointer border-0 p-0 bg-transparent" />
+                                        <div>
+                                            <div class="font-bold text-lg text-gray-700">จิ้มเลือกสีได้ตามใจชอบเลย! (นับหมื่นสี)</div>
+                                            <div class="text-gray-500 text-sm">รหัสสี: {{ settings.themeColor }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-wrap gap-4">
+                                        <button v-for="c in themeColors" :key="c.hex"
+                                            @click="updateSetting('themeColor', c.hex)"
+                                            class="w-14 h-14 rounded-full shadow-lg transition-transform hover:scale-110"
+                                            :class="settings.themeColor === c.hex ? 'ring-4 ring-offset-4 ring-gray-300 scale-110' : ''"
+                                            :style="{ backgroundColor: c.hex }" :title="c.name">
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -430,9 +454,19 @@
                     <div v-if="user && user.role === 'student' && !isLoading" class="space-y-8 flex-1">
                         
                         <div class="p-6 md:p-8 rounded-3xl flex justify-between items-center shadow-inner" :style="{ backgroundColor: settings.themeColor + '20' }">
-                            <div>
-                                <h2 class="text-3xl font-extrabold" :style="{ color: settings.themeColor }">สวัสดีจ้า, {{ user.name }} 👋</h2>
-                                <p class="text-gray-700 mt-2 font-medium text-lg">อย่าลืมจดและเคลียร์การบ้านนะ สู้ๆ! ✌️</p>
+                            <div class="flex items-center gap-4 md:gap-6">
+                                <div class="relative group">
+                                    <img :src="settings['profile_' + user.id] || 'https://api.dicebear.com/7.x/notionists/svg?seed=' + user.id" class="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 object-cover shadow-md bg-white" :style="{ borderColor: settings.themeColor }" />
+                                    <label class="absolute inset-0 bg-black/50 text-white flex flex-col items-center justify-center rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-xs font-bold">
+                                        <span class="text-lg">📷</span>
+                                        <span>เปลี่ยนรูป</span>
+                                        <input type="file" accept="image/*" class="hidden" @change="uploadProfilePic($event, user.id)" />
+                                    </label>
+                                </div>
+                                <div>
+                                    <h2 class="text-2xl md:text-3xl font-extrabold" :style="{ color: settings.themeColor }">สวัสดีจ้า, {{ user.name }} 👋</h2>
+                                    <p class="text-gray-700 mt-2 font-medium text-base md:text-lg">อย่าลืมจดและเคลียร์การบ้านนะ สู้ๆ! ✌️</p>
+                                </div>
                             </div>
                             <div class="text-[4rem] cute-float hidden sm:block">📝</div>
                         </div>
@@ -853,6 +887,23 @@
                     }
                 };
 
+                const uploadProfilePic = async (event, studentId) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const base64 = await processImage(file);
+                        updateSetting('profile_' + studentId, base64);
+                        showAlert('สำเร็จ!', 'เปลี่ยนรูปโปรไฟล์เรียบร้อยแล้วจ้า น่ารักมาก! 🥰');
+                    }
+                };
+
+                const adminToggleTaskStatus = (task) => {
+                    const newStatus = task.status === 'done' ? 'pending' : 'done';
+                    const newPhoto = newStatus === 'pending' ? '' : task.photo;
+                    task.status = newStatus;
+                    task.photo = newPhoto;
+                    apiCall({ action: 'updateTask', id: task.id, data: { status: newStatus, photo: newPhoto } });
+                };
+
                 // --- Exports (ใช้ HTML2Canvas / CSV / Blob) ---
                 const exportJpg = (elementId, filename) => {
                     const el = document.getElementById(elementId);
@@ -927,7 +978,7 @@
                     students, newStudent, addStudent, deleteStudent,
                     tasks, mySortedTasks, newTask, addTask, handleNewTaskPhoto, markTaskDone, deleteTask, getTasksForStudent, uploadTaskPhoto,
                     attendance, toggleAttendance, isPresent, getAttendanceCount, getAttendanceForPeriod,
-                    settings, themeColors, updateSetting, uploadImage,
+                    settings, themeColors, updateSetting, uploadImage, uploadProfilePic, adminToggleTaskStatus,
                     modal, showAlert, showConfirm, closeModal, backgroundStyle,
                     exportJpg, exportExcelAttendance, exportExcelReport, exportDoc,
                     webAppUrl
