@@ -231,21 +231,41 @@ function updateOrAppend(sheet, id, rowData) {
                     <div v-if="!user && !isLoading" class="flex flex-col items-center justify-center flex-1 w-full relative">
                         <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl w-full max-w-md border-4 relative z-10" :style="{ borderColor: settings.themeColor + '40' }">
                             <div class="absolute -top-20 left-1/2 -translate-x-1/2 text-[5rem] cute-float z-20 drop-shadow-lg">🐻‍❄️</div>
-                            <div class="text-center mb-8 mt-6">
-                                <h2 class="text-3xl font-extrabold text-gray-700 mb-2">ยินดีต้อนรับจ้า!</h2>
-                                <p class="text-gray-500 font-medium">กรุณากรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
+                            
+                            <!-- เลือกโหมดเข้าสู่ระบบ -->
+                            <div class="flex bg-gray-100 rounded-2xl p-1 mb-8 mt-6 shadow-inner">
+                                <button @click="loginMode = 'student'" :class="loginMode === 'student' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-400 hover:text-gray-600'" class="flex-1 py-3 rounded-xl font-bold transition-all text-lg">👧👦 นักเรียน</button>
+                                <button @click="loginMode = 'admin'" :class="loginMode === 'admin' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-400 hover:text-gray-600'" class="flex-1 py-3 rounded-xl font-bold transition-all text-lg">👩‍🏫 คุณครู</button>
                             </div>
+
+                            <div class="text-center mb-8">
+                                <h2 class="text-3xl font-extrabold text-gray-700 mb-2">ยินดีต้อนรับจ้า!</h2>
+                                <p class="text-gray-500 font-medium">
+                                    {{ loginMode === 'student' ? 'ล็อกอินเพื่อเข้าสู่ระบบของนักเรียน' : 'ล็อกอินเพื่อจัดการระบบสำหรับคุณครู' }}
+                                </p>
+                            </div>
+
                             <form @submit.prevent="login" class="space-y-6">
-                                <div class="relative">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">🔑</span>
-                                    <input type="password" v-model="loginCode" placeholder="รหัสนักเรียน หรือ รหัสครู" required
-                                        class="w-full pl-12 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium"
-                                        :style="{ borderColor: settings.themeColor + '40' }" />
+                                <div class="text-left">
+                                    <label class="block text-sm font-bold mb-2 text-gray-700">
+                                        {{ loginMode === 'student' ? 'กรอกรหัสประจำตัวนักเรียน (รับที่ครูผู้สอน)' : 'กรอกรหัสผ่านคุณครู (nannoonadmin)' }}
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">🔑</span>
+                                        <input :type="loginMode === 'admin' ? 'password' : 'text'" v-model="loginCode" 
+                                            :placeholder="loginMode === 'student' ? 'ใส่รหัสของตัวเองที่นี่... เช่น std01' : 'ใส่รหัสผ่านคุณครู...'" required
+                                            class="w-full pl-12 pr-4 py-4 rounded-2xl border-2 focus:outline-none transition-colors bg-gray-50 focus:bg-white text-lg font-medium"
+                                            :style="{ borderColor: settings.themeColor + '40' }" />
+                                    </div>
                                 </div>
                                 <button type="submit" class="w-full text-white font-bold text-lg py-4 rounded-2xl transition-transform hover:scale-105 shadow-lg flex justify-center items-center gap-2"
                                     :style="{ backgroundColor: settings.themeColor }">
                                     เข้าสู่ระบบ ✨
                                 </button>
+
+                                <p v-if="loginMode === 'student'" class="text-center text-sm mt-4 font-bold" :style="{ color: settings.themeColor }">
+                                    * หมายเหตุ: หากยังไม่มีรหัส ให้คุณครูเพิ่มรายชื่อให้ก่อนนะคะ
+                                </p>
                             </form>
                         </div>
                     </div>
@@ -353,7 +373,8 @@ function updateOrAppend(sheet, id, rowData) {
                         <div v-if="currentAdminTab === 'students'" class="grid md:grid-cols-3 gap-6 fade-enter-active">
                             <div class="md:col-span-1">
                                 <div class="p-6 rounded-3xl border-4 bg-white sticky top-4" :style="{ borderColor: settings.themeColor + '40' }">
-                                    <h3 class="font-bold text-xl mb-4 text-gray-700">เพิ่มนักเรียน 👧👦</h3>
+                                    <h3 class="font-bold text-xl mb-2 text-gray-700">เพิ่มนักเรียน 👧👦</h3>
+                                    <p class="text-sm font-medium text-gray-500 mb-4">* ตั้งชื่อและรหัสผ่านให้นักเรียนใช้ล็อกอินเข้าเว็บ</p>
                                     <form @submit.prevent="addStudent" class="space-y-4">
                                         <div>
                                             <label class="text-sm font-bold text-gray-500 mb-1 block">ชื่อ-นามสกุล หรือชื่อเล่น</label>
@@ -508,7 +529,7 @@ function updateOrAppend(sheet, id, rowData) {
                         <!-- Form จดการบ้าน -->
                         <div class="p-6 md:p-8 rounded-3xl border-4 bg-white shadow-sm relative overflow-hidden" :style="{ borderColor: settings.themeColor + '40' }">
                             <div class="absolute top-4 right-4 text-3xl opacity-20">✍️</div>
-                            <h3 class="font-bold text-2xl mb-6 text-gray-700">จดการบ้านใหม่</h3>
+                            <h3 class="font-bold text-2xl mb-6 text-gray-700">✍️ บันทึกรายละเอียดการบ้าน</h3>
                             <form @submit.prevent="addTask" class="grid md:grid-cols-4 gap-4">
                                 <div class="md:col-span-1">
                                     <label class="text-sm font-bold text-gray-500 mb-2 block">วันที่ส่ง</label>
@@ -585,6 +606,7 @@ function updateOrAppend(sheet, id, rowData) {
             setup() {
                 // --- State ---
                 const user = ref(null);
+                const loginMode = ref('student');
                 const loginCode = ref('');
                 const isLoading = ref(false);
                 
@@ -654,16 +676,16 @@ function updateOrAppend(sheet, id, rowData) {
 
                 const mySortedTasks = computed(() => {
                     if (!user.value || user.value.role !== 'student') return [];
-                    return tasks.value.filter(t => t.studentId === user.value.id)
-                                      .sort((a, b) => new Date(b.date) - new Date(a.date));
+                    return tasks.value.filter(t => t && t.studentId === user.value.id)
+                                      .sort((a, b) => new Date(b?.date || 0) - new Date(a?.date || 0));
                 });
 
                 const getTasksForStudent = (studentId) => {
-                    return tasks.value.filter(t => t.studentId === studentId && t.date === reportDate.value);
+                    return tasks.value.filter(t => t && t.studentId === studentId && t.date === reportDate.value);
                 };
 
                 const isPresent = (studentId) => {
-                    const record = attendance.value.find(a => a.date === attendanceDate.value && a.studentId === studentId);
+                    const record = attendance.value.find(a => a && a.date === attendanceDate.value && a.studentId === studentId);
                     return record ? record.status === 'true' : false;
                 };
 
@@ -725,14 +747,23 @@ function updateOrAppend(sheet, id, rowData) {
                 // --- App Actions ---
                 const login = () => {
                     const code = loginCode.value.trim();
-                    if (code === 'nannoonadmin') {
-                        user.value = { role: 'admin' };
+                    if (loginMode.value === 'admin') {
+                        if (code === 'nannoonadmin') {
+                            user.value = { role: 'admin' };
+                        } else {
+                            showAlert('อุ๊ปส์!', 'รหัสคุณครูไม่ถูกต้องค่ะ ลองพิมพ์ใหม่อีกครั้งน้า 🥺');
+                            return;
+                        }
                     } else {
+                        if (students.value.length === 0) {
+                            showAlert('ยังไม่มีข้อมูลนักเรียน', 'ตอนนี้ในระบบยังไม่มีชื่อนักเรียนเลยจ้า กรุณาแจ้งให้คุณครูเพิ่มรายชื่อและรหัสให้ก่อนนะคะ 🥺');
+                            return;
+                        }
                         const std = students.value.find(s => s.code === code);
                         if (std) {
                             user.value = { role: 'student', id: std.id, name: std.name };
                         } else {
-                            showAlert('อุ๊ปส์!', 'รหัสไม่ถูกต้องค่ะ ลองพิมพ์ใหม่อีกครั้งน้า 🥺');
+                            showAlert('อุ๊ปส์!', 'ไม่พบรหัสนักเรียนนี้ค่ะ! พิมพ์ผิดหรือเปล่าเอ่ย? 🥺');
                             return;
                         }
                     }
@@ -767,7 +798,7 @@ function updateOrAppend(sheet, id, rowData) {
                     const curr = isPresent(studentId);
                     const newStatus = curr ? 'false' : 'true';
                     
-                    const existingIdx = attendance.value.findIndex(a => a.date === attendanceDate.value && a.studentId === studentId);
+                    const existingIdx = attendance.value.findIndex(a => a && a.date === attendanceDate.value && a.studentId === studentId);
                     if(existingIdx >= 0) {
                         attendance.value[existingIdx].status = newStatus;
                     } else {
@@ -890,10 +921,10 @@ function updateOrAppend(sheet, id, rowData) {
                 };
 
                 const exportDoc = (elementId, filename) => {
-                    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Report</title><style>body { font-family: 'Tahoma', sans-serif; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } img { max-width: 150px; height: auto; }</style></head><body>";
+                    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Report</title><style>body { font-family: 'Tahoma', sans-serif; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } img { max-width: 250px; height: auto; border-radius: 8px; }</style></head><body>";
                     const footer = "</body></html>";
                     const el = document.getElementById(elementId);
-                    const html = header + el.innerHTML + footer;
+                    const html = header + "<h2>" + filename.replace(/_/g, ' ') + "</h2>" + el.innerHTML + footer;
                     downloadBlob('\ufeff' + html, filename + '.doc', 'application/msword');
                 };
 
@@ -912,7 +943,7 @@ function updateOrAppend(sheet, id, rowData) {
                 });
 
                 return {
-                    user, loginCode, login, logout, isLoading,
+                    user, loginMode, loginCode, login, logout, isLoading,
                     adminTabs, currentAdminTab, attendanceDate, reportDate,
                     students, newStudent, addStudent, deleteStudent,
                     tasks, mySortedTasks, addTask, markTaskDone, deleteTask, getTasksForStudent, uploadTaskPhoto,
