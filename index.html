@@ -943,33 +943,79 @@
                 const importStudentsCSV = (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const text = e.target.result;
-                        const rows = text.split('\n');
+                    
+                    // ฟังก์ชันอ่านไฟล์พร้อมเลือกรูปแบบภาษา (Encoding)
+                    const readFile = (encoding) => {
+                        return new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.readAsText(file, encoding);
+                        });
+                    };
+
+                    const processCSV = async () => {
+                        let text = await readFile('UTF-8');
+                        // ถ้าพบอักขระแปลกประหลาด () แสดงว่าเซฟมาจาก Excel แบบเก่า ให้ใช้ encoding ของไทย
+                        if (text.includes('')) {
+                            text = await readFile('windows-874'); 
+                        }
+
+                        // รองรับการตัดบรรทัดทั้งแบบ Windows (\r\n) และ Mac/Linux (\n)
+                        const rows = text.split(/\r?\n/);
                         let added = 0;
+                        let updated = 0;
+
                         for (let i = 1; i < rows.length; i++) {
-                            const row = rows[i].split(',');
+                            if (!rows[i].trim()) continue; // ข้ามบรรทัดว่าง
+                            
+                            // แยกคอลัมน์ และลบเครื่องหมาย " (quote) ออก
+                            const row = rows[i].split(',').map(item => item.replace(/(^"|"$)/g, '').trim());
+                            
                             if (row.length >= 2) {
-                                const name = row[0].replace(/"/g, '').trim();
-                                const code = row[1].replace(/"/g, '').trim();
-                                const fullname = row.length >= 3 ? row[2].replace(/"/g, '').trim() : '';
-                                const classRoom = row.length >= 4 ? row[3].replace(/"/g, '').trim() : '';
-                                const studentNo = row.length >= 5 ? row[4].replace(/"/g, '').trim() : '';
-                                const studentIdCode = row.length >= 6 ? row[5].replace(/"/g, '').trim() : '';
-                                if (name && code && !students.value.find(s => s.name === name)) {
-                                    const id = 'std_' + Date.now() + '_' + added;
-                                    const stdData = { id, name, code, fullname, classRoom, studentNo, studentIdCode };
-                                    students.value.push(stdData);
-                                    apiCall({ action: 'saveStudent', ...stdData });
-                                    added++;
+                                const name = row[0];
+                                const code = row[1];
+                                const fullname = row.length >= 3 ? row[2] : '';
+                                const classRoom = row.length >= 4 ? row[3] : '';
+                                const studentNo = row.length >= 5 ? row[4] : '';
+                                const studentIdCode = row.length >= 6 ? row[5] : '';
+
+                                if (name && code) {
+                                    // ค้นหาว่ามีนักเรียนคนนี้อยู่แล้วหรือไม่ (เช็คจาก รหัสนักเรียน หรือ ชื่อเล่น)
+                                    const existingIndex = students.value.findIndex(s => 
+                                        (studentIdCode && s.studentIdCode === studentIdCode) || s.name === name
+                                    );
+
+                                    if (existingIndex !== -1) {
+                                        // กรณีมีรายชื่ออยู่แล้ว -> ให้อัปเดตข้อมูลทับของเดิม
+                                        const existingId = students.value[existingIndex].id;
+                                        const updatedData = { id: existingId, name, code, fullname, classRoom, studentNo, studentIdCode };
+                                        students.value[existingIndex] = updatedData;
+                                        
+                                        apiCall({ action: 'deleteStudent', id: existingId });
+                                        apiCall({ action: 'saveStudent', ...updatedData });
+                                        updated++;
+                                    } else {
+                                        // กรณีไม่มีรายชื่อ -> ให้เพิ่มคนใหม่
+                                        const id = 'std_' + Date.now() + '_' + added;
+                                        const stdData = { id, name, code, fullname, classRoom, studentNo, studentIdCode };
+                                        students.value.push(stdData);
+                                        apiCall({ action: 'saveStudent', ...stdData });
+                                        added++;
+                                    }
                                 }
                             }
                         }
-                        showAlert('สำเร็จ!', `นำเข้าข้อมูลนักเรียนสำเร็จ ${added} คน`);
+                        
+                        let msg = '';
+                        if (added > 0) msg += `เพิ่มรายชื่อใหม่: ${added} คน\n`;
+                        if (updated > 0) msg += `อัปเดตข้อมูลเดิม: ${updated} คน\n`;
+                        if (added === 0 && updated === 0) msg = 'ไม่พบข้อมูลที่ถูกต้องในไฟล์จ้า';
+                        
+                        showAlert('สำเร็จ!', msg);
                         event.target.value = ''; 
                     };
-                    reader.readAsText(file);
+
+                    processCSV();
                 };
 
                 const exportStudentsCSV = () => {
