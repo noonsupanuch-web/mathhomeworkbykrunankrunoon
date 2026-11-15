@@ -887,9 +887,11 @@
                     } catch (error) { console.error('API Error:', error); }
                 };
 
-                const fetchAllData = async () => {
+                let syncInterval = null;
+
+                const fetchAllData = async (isBackground = false) => {
                     if (!webAppUrl) return;
-                    isLoading.value = true;
+                    if (!isBackground) isLoading.value = true;
                     try {
                         const res = await fetch(webAppUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'getData' }) });
                         const data = await res.json();
@@ -899,15 +901,13 @@
                             if(data.attendance) attendance.value = data.attendance;
                             if(data.settings) {
                                 data.settings.forEach(s => {
-                                    if(settings.hasOwnProperty(s.id)) {
-                                        settings[s.id] = s.value;
-                                        if (s.id === 'appIcon' && s.value) updateAppIcon(s.value);
-                                    }
+                                    settings[s.id] = s.value; // อัปเดตการตั้งค่า รวมถึงรูปโปรไฟล์นักเรียน (profile_...)
+                                    if (s.id === 'appIcon' && s.value) updateAppIcon(s.value);
                                 });
                             }
                         }
                     } catch(err) { console.error("Fetch data failed", err); } 
-                    finally { isLoading.value = false; }
+                    finally { if (!isBackground) isLoading.value = false; }
                 };
 
                 // Logic
@@ -1268,7 +1268,16 @@
                     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = filename; link.click();
                 };
 
-                onMounted(() => { fetchAllData(); });
+                onMounted(() => { 
+                    fetchAllData(); 
+                    
+                    // ระบบ Auto-Sync ข้อมูลเบื้องหลังทุกๆ 15 วินาที
+                    syncInterval = setInterval(() => {
+                        if (user.value) { // ซิงค์เฉพาะตอนที่ล็อกอินอยู่
+                            fetchAllData(true);
+                        }
+                    }, 15000);
+                });
 
                 return {
                     user, loginMode, loginCode, loginName, login, logout, isLoading,
