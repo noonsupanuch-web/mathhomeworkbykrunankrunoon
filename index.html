@@ -48,10 +48,13 @@
     <!-- ========================================== -->
     <div id="app" class="min-h-screen relative flex justify-center items-center p-4 md:p-8">
         
-        <!-- Background Decorations -->
+        <!-- Background Decorations (เพิ่มความน่ารักทันสมัย) -->
         <div class="absolute top-10 left-10 text-6xl cute-float opacity-80 pointer-events-none hidden md:block z-0">☁️</div>
-        <div class="absolute top-40 right-20 text-6xl cute-float-delayed opacity-80 pointer-events-none hidden md:block z-0">🌸</div>
-        <div class="absolute bottom-20 left-1/4 text-5xl cute-float opacity-80 pointer-events-none hidden md:block z-0">✨</div>
+        <div class="absolute top-40 right-10 text-7xl cute-float-delayed opacity-80 pointer-events-none hidden md:block z-0">🦄</div>
+        <div class="absolute bottom-20 left-1/4 text-6xl cute-float opacity-80 pointer-events-none hidden md:block z-0">🦋</div>
+        <div class="absolute top-1/4 left-1/3 text-5xl cute-float-fast opacity-50 pointer-events-none hidden md:block z-0">🌈</div>
+        <div class="absolute bottom-1/3 right-1/4 text-6xl cute-float opacity-70 pointer-events-none hidden md:block z-0">🎨</div>
+        <div class="absolute top-1/2 left-20 text-6xl cute-float-delayed opacity-60 pointer-events-none hidden md:block z-0">🍭</div>
         
         <!-- Modal แจ้งเตือนน่ารักๆ -->
         <transition name="fade">
@@ -90,9 +93,14 @@
                 <h1 class="text-2xl md:text-4xl font-bold flex items-center justify-center gap-3 drop-shadow-md">
                     🌸 ชุมนุมการบ้านคณิตติดเพื่อน 📚
                 </h1>
-                <button v-if="user" @click="logout" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 p-3 rounded-full transition-colors flex items-center justify-center" title="ออกจากระบบ">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                </button>
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <button v-if="user && user.isAdminMasquerading" @click="user = { role: 'admin' }" class="bg-yellow-400 text-yellow-900 hover:bg-yellow-500 px-4 py-2 rounded-2xl font-bold text-sm shadow-md transition-transform hover:scale-105" title="กลับหน้าแอดมิน">
+                        👑 กลับหน้าแอดมิน
+                    </button>
+                    <button v-if="user" @click="logout" class="bg-white/20 hover:bg-white/40 p-3 rounded-full transition-colors flex items-center justify-center" title="ออกจากระบบ">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="p-4 md:p-8 flex-1 flex flex-col">
@@ -105,21 +113,41 @@
 
                 <!-- 1. LOGIN SCREEN -->
                 <transition name="slide-up">
-                    <div v-if="!user && !isLoading" class="flex flex-col items-center justify-center flex-1 w-full relative">
-                        <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl w-full max-w-md border-4 relative z-10" :style="{ borderColor: settings.themeColor + '40' }">
-                            <div class="absolute -top-20 left-1/2 -translate-x-1/2 text-[5rem] cute-float z-20 drop-shadow-lg">🐻‍❄️</div>
+                    <div v-if="!user && !isLoading" class="flex flex-col items-center justify-center flex-1 w-full relative mt-12 md:mt-20">
+                        
+                        <!-- แบนเนอร์หน้าเข้าสู่ระบบ (รองรับรูปอัปโหลดจากแอดมิน หรือแสดงค่าเริ่มต้น) -->
+                        <div class="w-full flex justify-center mb-[-40px] md:mb-[-60px] relative z-20 cute-float">
+                            <img v-if="settings.loginBanner" :src="settings.loginBanner" alt="Login Banner" class="h-28 md:h-36 object-contain drop-shadow-xl hover:scale-105 transition-transform" />
+                            <div v-else class="w-[90%] max-w-[400px] py-6 px-8 rounded-[2rem] border-4 md:border-[6px] border-white shadow-xl flex items-center justify-center gap-4 overflow-hidden" :style="{ backgroundColor: settings.themeColor }">
+                                <span class="text-5xl md:text-6xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐰</span>
+                                <span class="text-2xl md:text-3xl text-white font-black drop-shadow-md text-center">ยินดีต้อนรับ!</span>
+                                <span class="text-5xl md:text-6xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐻</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-8 md:p-12 pt-16 md:pt-24 rounded-[2.5rem] shadow-2xl w-full max-w-lg border-4 relative z-10" :style="{ borderColor: settings.themeColor + '40' }">
                             
-                            <!-- เลือกโหมดเข้าสู่ระบบ -->
-                            <div class="flex bg-gray-100 rounded-2xl p-1 mb-8 mt-6 shadow-inner">
-                                <button @click="loginMode = 'student'" :class="loginMode === 'student' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-400 hover:text-gray-600'" class="flex-1 py-3 rounded-xl font-bold transition-all text-lg">👧👦 นักเรียน</button>
-                                <button @click="loginMode = 'admin'" :class="loginMode === 'admin' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-400 hover:text-gray-600'" class="flex-1 py-3 rounded-xl font-bold transition-all text-lg">👩‍🏫 คุณครู</button>
+                            <!-- ปุ่มเลือกสถานะ (สร้างด้วย CSS เพื่อความสวยงามและไม่ให้รูปภาพแตก/เสีย) -->
+                            <div class="relative w-full max-w-sm mx-auto mb-8 rounded-full p-2 flex justify-between shadow-inner bg-gray-100/80 border-2" :style="{ borderColor: settings.themeColor + '20' }">
+                                <button @click="loginMode = 'student'" 
+                                        class="flex-1 py-3 rounded-full font-bold text-lg transition-all duration-300 z-10 flex items-center justify-center gap-2" 
+                                        :class="loginMode === 'student' ? 'text-white shadow-md scale-105' : 'text-gray-500 hover:text-gray-700'" 
+                                        :style="loginMode === 'student' ? { backgroundColor: settings.themeColor } : {}">
+                                    <img v-if="settings.iconStudent" :src="settings.iconStudent" class="w-7 h-7 object-contain drop-shadow-sm" />
+                                    <span v-else>👧👦</span> นักเรียน
+                                </button>
+                                <button @click="loginMode = 'admin'" 
+                                        class="flex-1 py-3 rounded-full font-bold text-lg transition-all duration-300 z-10 flex items-center justify-center gap-2" 
+                                        :class="loginMode === 'admin' ? 'text-white shadow-md scale-105' : 'text-gray-500 hover:text-gray-700'" 
+                                        :style="loginMode === 'admin' ? { backgroundColor: settings.themeColor } : {}">
+                                    <img v-if="settings.iconTeacher" :src="settings.iconTeacher" class="w-7 h-7 object-contain drop-shadow-sm" />
+                                    <span v-else>👩‍🏫</span> คุณครู
+                                </button>
                             </div>
 
                             <div class="text-center mb-8">
                                 <h2 class="text-3xl font-extrabold text-gray-700 mb-2">ยินดีต้อนรับจ้า!</h2>
-                                <p class="text-gray-500 font-medium">
-                                    {{ loginMode === 'student' ? 'ล็อกอินเพื่อเข้าสู่ระบบของนักเรียน' : 'ล็อกอินเพื่อจัดการระบบสำหรับคุณครู' }}
-                                </p>
+                                <p class="text-gray-500 font-medium">กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบด้านล่าง 👇</p>
                             </div>
 
                             <form @submit.prevent="login" class="space-y-6">
@@ -344,33 +372,68 @@
                             
                             <div class="md:col-span-2">
                                 <div class="bg-white rounded-3xl border-4 overflow-hidden" :style="{ borderColor: settings.themeColor + '20' }">
-                                    <table class="w-full text-left">
-                                        <thead :style="{ backgroundColor: settings.themeColor + '15' }">
-                                            <tr>
-                                                <th class="p-4 font-bold text-gray-700 text-lg">โปรไฟล์</th>
-                                                <th class="p-4 font-bold text-gray-700 text-lg">ชื่อเล่น</th>
-                                                <th class="p-4 font-bold text-gray-700 text-lg">ชื่อ-สกุล</th>
-                                                <th class="p-4 font-bold text-gray-700 text-lg">รหัสเข้าเว็บ</th>
-                                                <th class="p-4 text-center font-bold text-gray-700 text-lg">จัดการ</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="std in students" :key="std.id" class="border-b hover:bg-gray-50 transition-colors">
-                                                <td class="p-4">
-                                                    <img :src="settings['profile_' + std.id] || 'https://api.dicebear.com/7.x/notionists/svg?seed=' + std.id" class="w-12 h-12 rounded-full object-cover border-2" :style="{ borderColor: settings.themeColor }" />
-                                                </td>
-                                                <td class="p-4 font-bold text-gray-700">{{ std.name }}</td>
-                                                <td class="p-4 text-gray-600">{{ std.fullname || '-' }}</td>
-                                                <td class="p-4 font-mono font-bold text-gray-500">{{ std.code }}</td>
-                                                <td class="p-4 text-center">
-                                                    <button @click="deleteStudent(std.id)" class="text-red-400 hover:bg-red-100 p-3 rounded-full transition-colors">🗑️</button>
-                                                </td>
-                                            </tr>
-                                            <tr v-if="students.length === 0">
-                                                <td colspan="5" class="text-center p-8 text-gray-400 font-medium">ยังไม่มีนักเรียนในระบบจ้า</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                    <div class="p-4 flex flex-wrap justify-between items-center bg-gray-50 border-b-2 gap-2" :style="{ borderColor: settings.themeColor + '20' }">
+                                        <h4 class="font-bold text-gray-700">รายชื่อทั้งหมด ({{ students.length }} คน)</h4>
+                                        <div class="flex gap-2">
+                                            <label class="cursor-pointer bg-blue-100 text-blue-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-200 transition-colors shadow-sm flex items-center gap-2">
+                                                📥 นำเข้า Excel (.csv)
+                                                <input type="file" accept=".csv" class="hidden" @change="importStudentsCSV" />
+                                            </label>
+                                            <button @click="exportStudentsCSV" class="bg-green-100 text-green-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-green-200 transition-colors shadow-sm flex items-center gap-2">
+                                                📤 โหลดฟอร์ม/ส่งออก
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-left min-w-[600px]">
+                                            <thead :style="{ backgroundColor: settings.themeColor + '15' }">
+                                                <tr>
+                                                    <th class="p-4 font-bold text-gray-700 text-lg w-16">โปรไฟล์</th>
+                                                    <th class="p-4 font-bold text-gray-700 text-lg">ชื่อเล่น</th>
+                                                    <th class="p-4 font-bold text-gray-700 text-lg">ชื่อ-สกุล</th>
+                                                    <th class="p-4 font-bold text-gray-700 text-lg">รหัสเข้าเว็บ</th>
+                                                    <th class="p-4 text-center font-bold text-gray-700 text-lg w-48">จัดการ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="std in students" :key="std.id" class="border-b hover:bg-gray-50 transition-colors">
+                                                    <td class="p-4">
+                                                        <img :src="settings['profile_' + std.id] || 'https://api.dicebear.com/7.x/notionists/svg?seed=' + std.id" class="w-12 h-12 rounded-full object-cover border-2" :style="{ borderColor: settings.themeColor }" />
+                                                    </td>
+                                                    <td class="p-4 font-bold text-gray-700">
+                                                        <input v-if="editingStudent?.id === std.id" v-model="editingStudent.name" class="border-2 rounded-lg p-2 w-full focus:outline-none" :style="{ borderColor: settings.themeColor }" />
+                                                        <span v-else>{{ std.name }}</span>
+                                                    </td>
+                                                    <td class="p-4 text-gray-600">
+                                                        <input v-if="editingStudent?.id === std.id" v-model="editingStudent.fullname" class="border-2 rounded-lg p-2 w-full focus:outline-none" :style="{ borderColor: settings.themeColor }" />
+                                                        <span v-else>{{ std.fullname || '-' }}</span>
+                                                    </td>
+                                                    <td class="p-4 font-mono font-bold text-gray-500">
+                                                        <input v-if="editingStudent?.id === std.id" v-model="editingStudent.code" class="border-2 rounded-lg p-2 w-full focus:outline-none" :style="{ borderColor: settings.themeColor }" />
+                                                        <span v-else>{{ std.code }}</span>
+                                                    </td>
+                                                    <td class="p-4 text-center whitespace-nowrap">
+                                                        <template v-if="editingStudent?.id === std.id">
+                                                            <button @click="saveEditStudent()" class="text-green-600 bg-green-100 hover:bg-green-200 px-3 py-1.5 rounded-xl transition-colors font-bold text-sm mr-1">💾 บันทึก</button>
+                                                            <button @click="editingStudent = null" class="text-gray-500 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-xl transition-colors font-bold text-sm">❌ ยกเลิก</button>
+                                                        </template>
+                                                        <template v-else>
+                                                            <div class="flex items-center justify-center gap-1">
+                                                                <button @click="masqueradeAs(std)" class="text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-xl transition-colors font-bold text-sm flex items-center gap-1 shadow-sm" title="จำลองเข้าระบบเพื่อตรวจ/แก้ไขงาน">
+                                                                    👀 ตรวจงาน
+                                                                </button>
+                                                                <button @click="startEditStudent(std)" class="text-orange-500 bg-orange-50 hover:bg-orange-100 border border-orange-200 p-2 rounded-xl transition-colors shadow-sm" title="แก้ไขข้อมูลนักเรียน">✏️</button>
+                                                                <button @click="deleteStudent(std.id)" class="text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 p-2 rounded-xl transition-colors shadow-sm" title="ลบนักเรียน">🗑️</button>
+                                                            </div>
+                                                        </template>
+                                                    </td>
+                                                </tr>
+                                                <tr v-if="students.length === 0">
+                                                    <td colspan="5" class="text-center p-8 text-gray-400 font-medium">ยังไม่มีนักเรียนในระบบจ้า</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -444,118 +507,68 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                    </div>
-                </transition>
-
-                <!-- 3. STUDENT DASHBOARD -->
-                <transition name="slide-up">
-                    <div v-if="user && user.role === 'student' && !isLoading" class="space-y-8 flex-1">
-                        
-                        <div class="p-6 md:p-8 rounded-3xl flex justify-between items-center shadow-inner" :style="{ backgroundColor: settings.themeColor + '20' }">
-                            <div class="flex items-center gap-4 md:gap-6">
-                                <div class="relative group">
-                                    <img :src="settings['profile_' + user.id] || 'https://api.dicebear.com/7.x/notionists/svg?seed=' + user.id" class="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 object-cover shadow-md bg-white" :style="{ borderColor: settings.themeColor }" />
-                                    <label class="absolute inset-0 bg-black/50 text-white flex flex-col items-center justify-center rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity text-xs font-bold">
-                                        <span class="text-lg">📷</span>
-                                        <span>เปลี่ยนรูป</span>
-                                        <input type="file" accept="image/*" class="hidden" @change="uploadProfilePic($event, user.id)" />
-                                    </label>
-                                </div>
-                                <div>
-                                    <h2 class="text-2xl md:text-3xl font-extrabold" :style="{ color: settings.themeColor }">สวัสดีจ้า, {{ user.name }} 👋</h2>
-                                    <p class="text-gray-700 mt-2 font-medium text-base md:text-lg">อย่าลืมจดและเคลียร์การบ้านนะ สู้ๆ! ✌️</p>
+                            <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: settings.themeColor + '40' }">
+                                <h3 class="font-bold text-xl mb-4 flex items-center gap-2 text-gray-700">🐻 รูปตกแต่งหน้าเข้าสู่ระบบ (แทนแบนเนอร์การ์ตูน)</h3>
+                                <div class="space-y-4">
+                                    <img v-if="settings.loginBanner" :src="settings.loginBanner" alt="Login Banner" class="w-full h-48 object-contain rounded-2xl shadow-inner border-2 border-gray-200" />
+                                    <div v-else class="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300 text-gray-400">ยังไม่ได้อัปโหลด (ใช้แบนเนอร์เริ่มต้น)</div>
+                                    <div class="flex gap-2">
+                                        <label class="flex-1 cursor-pointer flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-dashed hover:bg-gray-50 transition-colors font-bold text-lg" :style="{ borderColor: settings.themeColor, color: settings.themeColor }">
+                                            อัปโหลดรูปภาพ
+                                            <input type="file" accept="image/*" class="hidden" @change="uploadImage($event, 'loginBanner')" />
+                                        </label>
+                                        <button v-if="settings.loginBanner" @click="updateSetting('loginBanner', '')" class="px-6 rounded-xl bg-red-50 text-red-500 font-bold hover:bg-red-100 transition-colors border-2 border-red-200">
+                                            ลบรูป
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="text-[4rem] cute-float hidden sm:block">📝</div>
-                        </div>
 
-                        <!-- Form จดการบ้าน -->
-                        <div class="p-6 md:p-8 rounded-3xl border-4 bg-white shadow-sm relative overflow-hidden" :style="{ borderColor: settings.themeColor + '40' }">
-                            <div class="absolute top-4 right-4 text-3xl opacity-20">✍️</div>
-                            <h3 class="font-bold text-2xl mb-6 text-gray-700">✍️ บันทึกรายละเอียดการบ้าน</h3>
-                            <form @submit.prevent="addTask" class="grid md:grid-cols-4 gap-4">
-                                <div class="md:col-span-1">
-                                    <label class="text-sm font-bold text-gray-500 mb-2 block">วันที่ส่ง</label>
-                                    <input type="date" v-model="newTask.date" required class="w-full p-3 rounded-xl border-2 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
-                                </div>
-                                <div class="md:col-span-1">
-                                    <label class="text-sm font-bold text-gray-500 mb-2 block">วิชา</label>
-                                    <input type="text" v-model="newTask.subject" list="subject-list" placeholder="พิมพ์หรือเลือกวิชา" required class="w-full p-3 rounded-xl border-2 focus:outline-none font-bold" :style="{ borderColor: settings.themeColor + '40' }" />
-                                    <datalist id="subject-list">
-                                        <option value="คณิตศาสตร์"></option>
-                                        <option value="วิทยาศาสตร์"></option>
-                                        <option value="ภาษาไทย"></option>
-                                        <option value="ภาษาอังกฤษ"></option>
-                                        <option value="สังคมศึกษา"></option>
-                                    </datalist>
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="text-sm font-bold text-gray-500 mb-2 block">รายละเอียด</label>
-                                    <input type="text" v-model="newTask.description" placeholder="เช่น ทำแบบฝึกหัดหน้า 1-5" required class="w-full p-3 rounded-xl border-2 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" />
-                                </div>
-                                
-                                <!-- เพิ่มส่วนแนบรูปภาพในฟอร์มจดการบ้าน -->
-                                <div class="md:col-span-4 flex flex-col sm:flex-row gap-3 items-center mt-2">
-                                    <label class="flex-1 cursor-pointer w-full p-3 rounded-xl border-2 border-dashed flex justify-center items-center gap-2 hover:bg-gray-50 transition-colors font-bold text-gray-500" :style="{ borderColor: settings.themeColor + '60' }">
-                                        <span v-if="!newTask.photo">📸 แนบรูปถ่ายการบ้าน (ถ้ามี)</span>
-                                        <span v-else class="text-green-600">✅ แนบรูปแล้ว (คลิกเพื่อเปลี่ยนรูป)</span>
-                                        <input type="file" accept="image/*" id="newTaskFileInput" class="hidden" @change="handleNewTaskPhoto" />
-                                    </label>
-                                    <button type="submit" class="w-full sm:w-auto text-white font-bold px-8 py-3 rounded-xl shadow-md whitespace-nowrap transition-transform hover:scale-105 text-lg" :style="{ backgroundColor: settings.themeColor }">
-                                        บันทึก! 📌
-                                    </button>
-                                </div>
-                                
-                                <!-- แสดงตัวอย่างรูปที่แนบ -->
-                                <div v-if="newTask.photo" class="md:col-span-4 flex justify-center fade-enter-active">
-                                    <div class="relative inline-block mt-2 hover:scale-105 transition-transform">
-                                        <img :src="newTask.photo" class="h-32 object-cover rounded-2xl shadow-md border-4" :style="{ borderColor: settings.themeColor + '40' }" />
-                                        <button type="button" @click="newTask.photo = ''; document.getElementById('newTaskFileInput').value = ''" class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md hover:bg-red-600" title="ลบรูป">❌</button>
+                            <!-- ส่วนที่เพิ่มเข้ามาใหม่: ตั้งค่าไอคอน -->
+                            <div class="p-8 rounded-3xl border-4 bg-white" :style="{ borderColor: settings.themeColor + '40' }">
+                                <h3 class="font-bold text-xl mb-6 flex items-center gap-2 text-gray-700">📱 ไอคอนแอปพลิเคชันและปุ่มกด</h3>
+                                <div class="grid md:grid-cols-3 gap-6 text-center">
+                                    
+                                    <div class="flex flex-col items-center justify-between p-4 border-2 rounded-2xl bg-gray-50" :style="{ borderColor: settings.themeColor + '20' }">
+                                        <span class="font-bold text-gray-600 mb-2">ไอคอนแอป (Favicon)</span>
+                                        <img v-if="settings.appIcon" :src="settings.appIcon" class="w-16 h-16 object-contain rounded-2xl shadow-md border bg-white mb-2" />
+                                        <div v-else class="text-5xl mb-2">📱</div>
+                                        <div class="flex gap-2 w-full mt-auto">
+                                            <label class="flex-1 cursor-pointer text-xs font-bold py-2 rounded-xl border bg-white transition-colors hover:bg-gray-100" :style="{ color: settings.themeColor, borderColor: settings.themeColor }">
+                                                อัปโหลด
+                                                <input type="file" accept="image/*" class="hidden" @change="uploadImage($event, 'appIcon')" />
+                                            </label>
+                                            <button v-if="settings.appIcon" @click="updateSetting('appIcon', '')" class="px-3 rounded-xl bg-red-50 text-red-500 font-bold hover:bg-red-100 text-xs border border-red-200">ลบ</button>
+                                        </div>
                                     </div>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div class="flex items-center gap-3 border-b-4 pb-2" :style="{ borderColor: settings.themeColor + '20' }">
-                            <h3 class="font-bold text-2xl text-gray-700">รายการการบ้านของฉัน 📚</h3>
-                        </div>
-                        
-                        <div v-if="mySortedTasks.length === 0" class="text-center py-16 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                            <div class="text-6xl mb-4 cute-float">🎉</div>
-                            <div class="text-gray-500 text-xl font-bold">ว่างเปล่า! ยังไม่ได้จดการบ้านเลยจ้า</div>
-                        </div>
-                        
-                        <div v-else class="grid gap-6 md:grid-cols-2">
-                            <div v-for="t in mySortedTasks" :key="t.id" 
-                                 class="flex flex-col p-6 rounded-3xl border-4 transition-all relative group"
-                                 :class="t.status === 'done' ? 'bg-green-50 shadow-sm' : 'bg-white shadow-md hover:shadow-lg'"
-                                 :style="{ borderColor: t.status === 'done' ? '#bbf7d0' : settings.themeColor + '40' }">
-                                
-                                <button @click="deleteTask(t.id)" class="absolute top-4 right-4 text-red-400 bg-red-50 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" title="ลบ">🗑️</button>
-                                
-                                <div class="flex justify-between items-start mb-3">
-                                    <span class="text-sm font-bold px-4 py-1.5 rounded-full bg-gray-100 text-gray-600 shadow-sm">{{ t.date }}</span>
-                                    <span v-if="t.status === 'done'" class="text-green-600 font-bold flex items-center gap-1 bg-green-100 px-3 py-1 rounded-full">✅ ส่งแล้ว</span>
-                                </div>
-                                <h4 class="font-extrabold text-2xl mb-2 pr-8" :style="{ color: t.status === 'done' ? '#9ca3af' : settings.themeColor }">{{ t.subject }}</h4>
-                                <p class="text-gray-600 text-lg mb-6 font-medium">{{ t.description }}</p>
-                                
-                                <div v-if="t.status !== 'done'" class="flex gap-3 mt-auto">
-                                    <button @click="markTaskDone(t.id, null)" class="flex-1 py-3 rounded-2xl font-bold transition-colors border-2 hover:bg-gray-50 text-base shadow-sm" :style="{ borderColor: settings.themeColor, color: settings.themeColor }">
-                                        ทำเสร็จแล้ว ✅
-                                    </button>
-                                    <label class="flex-1 py-3 rounded-2xl font-bold text-white transition-transform hover:scale-105 shadow-md flex items-center justify-center gap-2 text-base cursor-pointer" :style="{ backgroundColor: settings.themeColor }">
-                                        ถ่ายรูปส่ง 📷
-                                        <input type="file" accept="image/*" class="hidden" @change="uploadTaskPhoto($event, t.id)" />
-                                    </label>
-                                </div>
-                                <div v-else class="mt-auto pt-4 border-t-2 border-green-100">
-                                    <div v-if="t.photo" class="relative inline-block hover:scale-105 transition-transform">
-                                        <img :src="t.photo" alt="งานของฉัน" class="w-24 h-24 object-cover rounded-2xl border-4 shadow-sm" :style="{ borderColor: settings.themeColor + '40' }" />
+                                    
+                                    <div class="flex flex-col items-center justify-between p-4 border-2 rounded-2xl bg-gray-50" :style="{ borderColor: settings.themeColor + '20' }">
+                                        <span class="font-bold text-gray-600 mb-2">ปุ่ม "นักเรียน"</span>
+                                        <img v-if="settings.iconStudent" :src="settings.iconStudent" class="w-16 h-16 object-contain rounded-2xl shadow-md border bg-white mb-2" />
+                                        <div v-else class="text-5xl mb-2">👧👦</div>
+                                        <div class="flex gap-2 w-full mt-auto">
+                                            <label class="flex-1 cursor-pointer text-xs font-bold py-2 rounded-xl border bg-white transition-colors hover:bg-gray-100" :style="{ color: settings.themeColor, borderColor: settings.themeColor }">
+                                                อัปโหลด
+                                                <input type="file" accept="image/*" class="hidden" @change="uploadImage($event, 'iconStudent')" />
+                                            </label>
+                                            <button v-if="settings.iconStudent" @click="updateSetting('iconStudent', '')" class="px-3 rounded-xl bg-red-50 text-red-500 font-bold hover:bg-red-100 text-xs border border-red-200">ลบ</button>
+                                        </div>
                                     </div>
-                                    <p v-else class="text-green-600 font-bold">ส่งงานเรียบร้อยแล้ว เยี่ยมมาก! 🌟</p>
+                                    
+                                    <div class="flex flex-col items-center justify-between p-4 border-2 rounded-2xl bg-gray-50" :style="{ borderColor: settings.themeColor + '20' }">
+                                        <span class="font-bold text-gray-600 mb-2">ปุ่ม "คุณครู"</span>
+                                        <img v-if="settings.iconTeacher" :src="settings.iconTeacher" class="w-16 h-16 object-contain rounded-2xl shadow-md border bg-white mb-2" />
+                                        <div v-else class="text-5xl mb-2">👩‍🏫</div>
+                                        <div class="flex gap-2 w-full mt-auto">
+                                            <label class="flex-1 cursor-pointer text-xs font-bold py-2 rounded-xl border bg-white transition-colors hover:bg-gray-100" :style="{ color: settings.themeColor, borderColor: settings.themeColor }">
+                                                อัปโหลด
+                                                <input type="file" accept="image/*" class="hidden" @change="uploadImage($event, 'iconTeacher')" />
+                                            </label>
+                                            <button v-if="settings.iconTeacher" @click="updateSetting('iconTeacher', '')" class="px-3 rounded-xl bg-red-50 text-red-500 font-bold hover:bg-red-100 text-xs border border-red-200">ลบ</button>
+                                        </div>
+                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -589,6 +602,9 @@
                 ];
                 const currentAdminTab = ref('attendance');
                 
+                // สำหรับแก้ไขข้อมูลนักเรียน
+                const editingStudent = ref(null);
+
                 // State สำหรับ Attendance Report
                 const attMode = ref('daily');
                 const attendanceDate = ref(new Date().toISOString().split('T')[0]);
@@ -621,7 +637,11 @@
                     themeColor: '#f472b6',
                     bgImage: 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?q=80&w=2029',
                     teacher1: '',
-                    teacher2: ''
+                    teacher2: '',
+                    loginBanner: '',
+                    iconStudent: '',
+                    iconTeacher: '',
+                    appIcon: ''
                 });
 
                 const themeColors = [
@@ -714,7 +734,10 @@
                             if(data.attendance) attendance.value = data.attendance;
                             if(data.settings) {
                                 data.settings.forEach(s => {
-                                    if(settings.hasOwnProperty(s.id)) settings[s.id] = s.value;
+                                    if(settings.hasOwnProperty(s.id)) {
+                                        settings[s.id] = s.value;
+                                        if (s.id === 'appIcon' && s.value) updateAppIcon(s.value);
+                                    }
                                 });
                             }
                         }
@@ -780,6 +803,64 @@
                     });
                 };
 
+                const importStudentsCSV = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const text = e.target.result;
+                        const rows = text.split('\n');
+                        let added = 0;
+                        for (let i = 1; i < rows.length; i++) {
+                            const row = rows[i].split(',');
+                            if (row.length >= 2) {
+                                const name = row[0].replace(/"/g, '').trim();
+                                const code = row[1].replace(/"/g, '').trim();
+                                const fullname = row.length >= 3 ? row[2].replace(/"/g, '').trim() : '';
+                                if (name && code && !students.value.find(s => s.name === name)) {
+                                    const id = 'std_' + Date.now() + '_' + added;
+                                    const stdData = { id, name, code, fullname };
+                                    students.value.push(stdData);
+                                    apiCall({ action: 'saveStudent', ...stdData });
+                                    added++;
+                                }
+                            }
+                        }
+                        showAlert('สำเร็จ!', `นำเข้าข้อมูลนักเรียนสำเร็จ ${added} คน`);
+                        event.target.value = ''; 
+                    };
+                    reader.readAsText(file);
+                };
+
+                const exportStudentsCSV = () => {
+                    let csv = "\uFEFFชื่อเล่น,รหัสผ่าน,ชื่อ-สกุล\n";
+                    students.value.forEach(std => {
+                        csv += `"${std.name}","${std.code}","${std.fullname || ''}"\n`;
+                    });
+                    downloadBlob(csv, 'ฟอร์มรายชื่อนักเรียน_Excel.csv', 'text/csv;charset=utf-8;');
+                };
+
+                const startEditStudent = (std) => {
+                    editingStudent.value = { ...std };
+                };
+
+                const saveEditStudent = () => {
+                    if (!editingStudent.value) return;
+                    const index = students.value.findIndex(s => s.id === editingStudent.value.id);
+                    if (index !== -1) {
+                        students.value[index] = { ...editingStudent.value };
+                        // เนื่องจาก API เดิมไม่มี Update, จึงจำลองโดยการลบข้อมูลเดิมและเซฟเข้าไปใหม่ด้วย ID เดิม
+                        apiCall({ action: 'deleteStudent', id: editingStudent.value.id });
+                        apiCall({ action: 'saveStudent', ...editingStudent.value });
+                    }
+                    editingStudent.value = null;
+                    showAlert('สำเร็จ!', 'อัปเดตข้อมูลนักเรียนเรียบร้อยแล้วจ้า ✏️');
+                };
+
+                const masqueradeAs = (std) => {
+                    user.value = { role: 'student', id: std.id, name: std.name, isAdminMasquerading: true };
+                };
+
                 const toggleAttendance = (studentId) => {
                     const curr = isPresent(studentId);
                     const newStatus = curr ? 'false' : 'true';
@@ -841,7 +922,26 @@
 
                 const updateSetting = (key, value) => {
                     settings[key] = value;
+                    if (key === 'appIcon') updateAppIcon(value || '');
                     apiCall({ action: 'updateSettings', key, value });
+                };
+
+                const updateAppIcon = (base64) => {
+                    let link = document.querySelector("link[rel~='icon']");
+                    if (!link) {
+                        link = document.createElement('link');
+                        link.rel = 'icon';
+                        document.head.appendChild(link);
+                    }
+                    link.href = base64 || 'data:image/x-icon;,';
+
+                    let appleLink = document.querySelector("link[rel~='apple-touch-icon']");
+                    if (!appleLink) {
+                        appleLink = document.createElement('link');
+                        appleLink.rel = 'apple-touch-icon';
+                        document.head.appendChild(appleLink);
+                    }
+                    appleLink.href = base64 || 'data:image/x-icon;,';
                 };
 
                 // --- Image Processing ---
@@ -975,7 +1075,8 @@
                     adminTabs, currentAdminTab, 
                     attMode, attendanceDate, attMonth, attStartDate, attEndDate,
                     reportMode, reportDate, reportMonth, reportStartDate, reportEndDate,
-                    students, newStudent, addStudent, deleteStudent,
+                    students, newStudent, addStudent, deleteStudent, importStudentsCSV, exportStudentsCSV, masqueradeAs,
+                    editingStudent, startEditStudent, saveEditStudent,
                     tasks, mySortedTasks, newTask, addTask, handleNewTaskPhoto, markTaskDone, deleteTask, getTasksForStudent, uploadTaskPhoto,
                     attendance, toggleAttendance, isPresent, getAttendanceCount, getAttendanceForPeriod,
                     settings, themeColors, updateSetting, uploadImage, uploadProfilePic, adminToggleTaskStatus,
