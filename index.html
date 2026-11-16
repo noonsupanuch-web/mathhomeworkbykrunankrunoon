@@ -159,6 +159,9 @@
                     🌸 {{ settings.clubName || 'ชุมนุมการบ้านคณิตติดเพื่อน' }} 📚
                 </h1>
                 <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <span v-if="isOnlineSyncing" class="bg-green-400 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse shadow-sm hidden md:inline-block">
+                        ☁️ ออนไลน์
+                    </span>
                     <button v-if="user && user.isAdminMasquerading" @click="user = { role: 'admin' }" class="bg-yellow-400 text-yellow-900 hover:bg-yellow-500 px-4 py-2 rounded-2xl font-bold text-sm shadow-md transition-transform hover:scale-105" title="กลับหน้าแอดมิน">
                         👑 กลับ
                     </button>
@@ -503,12 +506,12 @@
                                         <thead class="sticky top-0 bg-gray-100 z-10 shadow-sm">
                                             <tr>
                                                 <th class="p-3 rounded-tl-xl font-bold text-gray-700 w-16 text-center">รูป</th>
-                                                <th class="p-3 font-bold text-gray-700">รหัส</th>
-                                                <th class="p-3 font-bold text-gray-700">ชื่อเล่น</th>
+                                                <th class="p-3 font-bold text-gray-700 w-24">รหัส</th>
+                                                <th class="p-3 font-bold text-gray-700 w-32">ชื่อเล่น</th>
                                                 <th class="p-3 font-bold text-gray-700 min-w-[150px]">ชื่อ-สกุล</th>
-                                                <th class="p-3 font-bold text-gray-700">ห้องเรียน</th>
-                                                <th class="p-3 font-bold text-gray-700">รหัสผ่าน</th>
-                                                <th class="p-3 rounded-tr-xl font-bold text-gray-700 text-center">จัดการ</th>
+                                                <th class="p-3 font-bold text-gray-700 w-24">ห้องเรียน</th>
+                                                <th class="p-3 font-bold text-gray-700 w-24">รหัสผ่าน</th>
+                                                <th class="p-3 rounded-tr-xl font-bold text-gray-700 text-center w-32">จัดการ</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -517,16 +520,16 @@
                                                     <img v-if="std.profileUrl" :src="std.profileUrl" class="w-10 h-10 rounded-full object-cover border shadow-sm mx-auto cursor-pointer" @click="viewingStudent = std">
                                                     <div v-else class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm mx-auto cursor-pointer" @click="viewingStudent = std">🧑</div>
                                                 </td>
-                                                <td class="p-3 font-mono text-sm">{{ std.code }}</td>
-                                                <td class="p-3 font-bold text-gray-800">{{ std.name }}</td>
-                                                <td class="p-3">{{ std.fullname }}</td>
-                                                <td class="p-3">{{ std.classRoom }}</td>
-                                                <td class="p-3">
-                                                    <input type="text" v-model="std.password" placeholder="ส่วนกลาง" class="w-24 border rounded p-1 text-sm bg-white focus:outline-none text-center">
+                                                <td class="p-1"><input type="text" v-model="std.code" class="w-full border-2 rounded p-2 text-sm font-mono text-center focus:outline-none focus:border-blue-400"></td>
+                                                <td class="p-1"><input type="text" v-model="std.name" class="w-full border-2 rounded p-2 text-sm font-bold focus:outline-none focus:border-blue-400"></td>
+                                                <td class="p-1"><input type="text" v-model="std.fullname" class="w-full border-2 rounded p-2 text-sm focus:outline-none focus:border-blue-400"></td>
+                                                <td class="p-1"><input type="text" v-model="std.classRoom" class="w-full border-2 rounded p-2 text-sm text-center focus:outline-none focus:border-blue-400"></td>
+                                                <td class="p-1">
+                                                    <input type="text" v-model="std.password" placeholder="ส่วนกลาง" class="w-full border-2 rounded p-2 text-sm bg-white focus:outline-none text-center focus:border-blue-400">
                                                 </td>
-                                                <td class="p-3 flex justify-center gap-2">
-                                                    <button @click="viewingStudent = std" class="text-blue-500 hover:text-blue-700 font-bold p-2 bg-blue-50 rounded-lg text-sm transition-colors shadow-sm">โปรไฟล์</button>
-                                                    <button @click="deleteStudent(std.id)" class="text-red-500 hover:text-red-700 font-bold p-2 bg-red-50 rounded-lg text-sm transition-colors shadow-sm">ลบ</button>
+                                                <td class="p-2 flex justify-center gap-1">
+                                                    <button @click="viewingStudent = std" class="text-blue-500 hover:text-blue-700 font-bold p-2 bg-blue-50 rounded-lg text-xs transition-colors shadow-sm">โปรไฟล์</button>
+                                                    <button @click="deleteStudent(std.id)" class="text-red-500 hover:text-red-700 font-bold p-2 bg-red-50 rounded-lg text-xs transition-colors shadow-sm">ลบ</button>
                                                 </td>
                                             </tr>
                                             <tr v-if="filteredStudentsForManagement.length === 0">
@@ -737,10 +740,14 @@
             setup() {
                 const isLoading = ref(true);
                 const isUploading = ref(false);
+                const isOnlineSyncing = ref(false);
                 const user = ref(null); // null, {role: 'admin'}, {role: 'student', ...}
                 const loginMode = ref('student');
                 const loginName = ref('');
                 const loginCode = ref('');
+
+                // ฝัง URL ของ Apps Script สำหรับใช้เป็น API ออนไลน์
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzo9JU1IFSbEUWtd_G1bwxjd9rik8xsb281f5UWkeshnBdQh-0XedXi2iSlu-rSnHqNQQ/exec';
 
                 // ข้อมูลจำลองเริ่มแรก
                 const defaultSettings = {
@@ -756,16 +763,13 @@
                 };
 
                 const defaultStudents = [
-                    { id: '1', code: 'S001', name: 'น้องเอ', fullname: 'ด.ช. เอ ใจดี', classRoom: 'ม.1/1', studentNo: '1', password: '' },
-                    { id: '2', code: 'S002', name: 'น้องบี', fullname: 'ด.ญ. บี น่ารัก', classRoom: 'ม.1/1', studentNo: '2', password: '' },
-                    { id: '3', code: 'S003', name: 'น้องซี', fullname: 'ด.ช. ซี เรียนเก่ง', classRoom: 'ม.1/2', studentNo: '1', password: '456' }
+                    { id: '1', code: 'S001', name: 'น้องเอ', fullname: 'ด.ช. เอ ใจดี', classRoom: 'ม.1/1', studentNo: '1', password: '' }
                 ];
 
-                // State
-                const settings = ref(JSON.parse(localStorage.getItem('mc_settings')) || defaultSettings);
-                const students = ref(JSON.parse(localStorage.getItem('mc_students')) || defaultStudents);
-                const attendance = ref(JSON.parse(localStorage.getItem('mc_attendance')) || []);
-                const tasks = ref(JSON.parse(localStorage.getItem('mc_tasks')) || []);
+                const settings = ref(defaultSettings);
+                const students = ref(defaultStudents);
+                const attendance = ref([]);
+                const tasks = ref([]);
 
                 // Admin UI State
                 const adminTabs = [
@@ -792,12 +796,9 @@
                 const reportStartDate = ref(new Date().toISOString().split('T')[0]);
                 const reportEndDate = ref(new Date().toISOString().split('T')[0]);
 
-                // Student UI State
                 const newTask = ref({ date: new Date().toISOString().split('T')[0], subject: '', detail: '' });
                 const pendingFile = ref(null);
                 const newStudent = ref({ code: '', name: '', fullname: '', classRoom: '', password: '', profileUrl: '' });
-                
-                // Added State for Search and Profile View
                 const studentSearch = ref('');
                 const viewingStudent = ref(null);
 
@@ -808,17 +809,80 @@
                 };
                 const closeModal = () => modal.value.isOpen = false;
 
-                // Watchers for saving to LocalStorage
-                watch(settings, (val) => localStorage.setItem('mc_settings', JSON.stringify(val)), { deep: true });
-                watch(students, (val) => localStorage.setItem('mc_students', JSON.stringify(val)), { deep: true });
-                watch(attendance, (val) => localStorage.setItem('mc_attendance', JSON.stringify(val)), { deep: true });
-                watch(tasks, (val) => localStorage.setItem('mc_tasks', JSON.stringify(val)), { deep: true });
+                // Watchers สลับสี Theme
                 watch(() => settings.value.themeColor, (color) => {
                     document.getElementById('meta-theme-color').content = color;
                 });
                 watch(() => settings.value.clubName, (name) => {
                     if (name) document.title = name;
                 }, { immediate: true });
+
+                // ==========================================
+                // ระบบออนไลน์ 100% เชื่อมต่อ Google Sheets
+                // ==========================================
+                let isLocalSaving = false;
+                let saveTimeout = null;
+
+                const loadDataFromCloud = async (isInitial = false) => {
+                    if(!isInitial) isUploading.value = true;
+                    try {
+                        const res = await fetch(APPS_SCRIPT_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action: 'loadData' })
+                        });
+                        const data = await res.json();
+                        if(data.status === 'success') {
+                            isLocalSaving = true; // หยุด watch ชั่วคราวตอนโหลด
+                            
+                            // โหลดข้อมูลลง State
+                            if (data.data.settings && Object.keys(data.data.settings).length > 0) settings.value = data.data.settings;
+                            if (data.data.students && data.data.students.length > 0) students.value = data.data.students;
+                            if (data.data.attendance) attendance.value = data.data.attendance;
+                            if (data.data.tasks) tasks.value = data.data.tasks;
+                            
+                            setTimeout(() => { isLocalSaving = false; }, 1000);
+                            if(!isInitial) showModal('สำเร็จ', 'ดึงข้อมูลจากระบบออนไลน์อัปเดตล่าสุดแล้ว! 📥');
+                        }
+                    } catch (e) {
+                        console.error("Load Error:", e);
+                        if(!isInitial) showModal('ข้อผิดพลาด', 'ดึงข้อมูลไม่สำเร็จ: ' + e.toString());
+                    } finally {
+                        if(!isInitial) isUploading.value = false;
+                        isLoading.value = false;
+                    }
+                };
+
+                const saveDataToCloud = async () => {
+                    isOnlineSyncing.value = true;
+                    try {
+                        const payload = {
+                            action: 'saveData',
+                            settings: JSON.parse(JSON.stringify(settings.value)),
+                            students: JSON.parse(JSON.stringify(students.value)),
+                            attendance: JSON.parse(JSON.stringify(attendance.value)),
+                            tasks: JSON.parse(JSON.stringify(tasks.value))
+                        };
+                        const res = await fetch(APPS_SCRIPT_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(payload)
+                        });
+                        await res.json();
+                    } catch (e) {
+                        console.error("Save Error", e);
+                    } finally {
+                        setTimeout(() => isOnlineSyncing.value = false, 500);
+                    }
+                };
+
+                // บันทึกขึ้น Cloud อัตโนมัติทุกครั้งที่มีการแก้ข้อมูลแอดมินหรือเด็กพิมพ์งาน
+                watch([settings, students, attendance, tasks], () => {
+                    if (!isLocalSaving && !isLoading.value) {
+                        clearTimeout(saveTimeout);
+                        saveTimeout = setTimeout(saveDataToCloud, 2000); // หน่วงเวลา 2 วิเมื่อพิมพ์เสร็จ
+                    }
+                }, { deep: true });
 
                 // Computed
                 const uniqueClasses = computed(() => {
@@ -849,7 +913,9 @@
                 // Methods - Auth
                 const login = () => {
                     if (loginMode.value === 'admin') {
-                        if (loginCode.value === settings.value.adminPassword) {
+                        // รองรับหลายรหัสผ่าน
+                        const adminPasswords = settings.value.adminPassword.split(',').map(p => p.trim());
+                        if (adminPasswords.includes(loginCode.value.trim())) {
                             user.value = { role: 'admin' };
                             loginCode.value = '';
                         } else {
@@ -909,21 +975,18 @@
 
                 const getAttendanceStats = (stdId) => {
                     let records = attendance.value.filter(a => a.studentId === stdId);
-                    
-                    // Filter based on attMode
                     if (attMode.value === 'daily') {
                         records = records.filter(a => a.date === attendanceDate.value);
                     } else if (attMode.value === 'monthly') {
                         records = records.filter(a => a.date.startsWith(attMonth.value));
                     } else if (attMode.value === 'range') {
                         records = records.filter(a => a.date >= attStartDate.value && a.date <= attEndDate.value);
-                    } // 'all' requires no filter
+                    } 
 
                     const present = records.filter(a => a.status === 'present').length;
                     const absent = records.filter(a => a.status === 'absent').length;
                     const leave = records.filter(a => a.status === 'leave').length;
                     const total = present + absent + leave;
-                    // นับลาเป็นการมาเรียนตามระเบียบทั่วไปหรือแยก? (สมมติลา=มาเรียนบางส่วน ในที่นี้คิด % จากมาเรียนจริง)
                     const percent = total === 0 ? 0 : Math.round((present / total) * 100);
                     return { present, absent, leave, total, percent, pass: percent >= 80 };
                 };
@@ -964,7 +1027,6 @@
                     try {
                         const url = await uploadImageToDrive(file);
                         studentObj.profileUrl = url;
-                        // ถ้าเป็นนักเรียนกำลังล็อกอินอยู่ ให้หน้าจออัปเดตแบบเรียลไทม์ด้วย
                         if (user.value && user.value.id === studentObj.id) {
                             user.value.profileUrl = url;
                         }
@@ -992,7 +1054,6 @@
                         const text = event.target.result;
                         const rows = text.split('\n').map(r => r.trim()).filter(r => r);
                         const newStds = [];
-                        // บรรทัดแรกคือ Header (รหัส,ชื่อเล่น,ชื่อ-สกุล,ชั้น,รหัสผ่าน,URLโปรไฟล์)
                         for(let i = 1; i < rows.length; i++) {
                             const cols = rows[i].split(',');
                             if (cols.length >= 2) {
@@ -1014,7 +1075,7 @@
                         }
                     };
                     reader.readAsText(file);
-                    e.target.value = ''; // รีเซ็ตค่าเพื่อให้นำเข้าไฟล์เดิมซ้ำได้ถ้าต้องการ
+                    e.target.value = ''; 
                 };
 
                 const exportStudents = () => {
@@ -1031,6 +1092,7 @@
 
                 // Methods - Settings
                 const saveSettings = () => {
+                    saveDataToCloud(); // บังคับเซฟทันที
                     showModal('สำเร็จ', 'บันทึกการตั้งค่าเรียบร้อยแล้ว');
                 };
 
@@ -1040,9 +1102,6 @@
                     else pendingFile.value = null;
                 };
 
-                // ฝัง URL ของ Apps Script สำหรับใช้เป็น API ออนไลน์โดยตรง
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzo9JU1IFSbEUWtd_G1bwxjd9rik8xsb281f5UWkeshnBdQh-0XedXi2iSlu-rSnHqNQQ/exec';
-
                 const uploadImageToDrive = async (file) => {
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
@@ -1051,6 +1110,7 @@
                             try {
                                 const response = await fetch(APPS_SCRIPT_URL, {
                                     method: 'POST',
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ทะลุ CORS
                                     body: JSON.stringify({
                                         action: 'uploadImage',
                                         fileName: file.name,
@@ -1065,7 +1125,7 @@
                                     reject(result.message);
                                 }
                             } catch (e) {
-                                reject('เกิดข้อผิดพลาดในการเชื่อมต่อ (อาจจะลืมใส่ URL หรือตั้งสิทธิ์ผิดจ้า)');
+                                reject('เกิดข้อผิดพลาดในการเชื่อมต่อ (อาจจะลืมใส่ URL หรือไม่ได้ Deploy เป็นเวอร์ชันใหม่จ้า)');
                             }
                         };
                         reader.onerror = () => reject('อ่านไฟล์ไม่สำเร็จ');
@@ -1087,59 +1147,6 @@
                         isUploading.value = false;
                         event.target.value = '';
                     }
-                };
-
-                // Methods - Cloud Sync (Google Sheets)
-                const saveDataToCloud = async () => {
-                    isUploading.value = true;
-                    try {
-                        const payload = {
-                            action: 'saveData',
-                            students: students.value,
-                            attendance: attendance.value,
-                            tasks: tasks.value
-                        };
-                        const res = await fetch(APPS_SCRIPT_URL, {
-                            method: 'POST',
-                            body: JSON.stringify(payload)
-                        });
-                        const data = await res.json();
-                        if(data.status === 'success') {
-                            showModal('สำเร็จ', 'บันทึกข้อมูลทั้งหมดลง Google Sheets เรียบร้อยแล้ว! ☁️');
-                        } else {
-                            throw new Error(data.message);
-                        }
-                    } catch (e) {
-                        showModal('ข้อผิดพลาด', 'ซิงค์ข้อมูลไม่สำเร็จ: ' + e.toString());
-                    } finally {
-                        isUploading.value = false;
-                    }
-                };
-
-                const loadDataFromCloud = () => {
-                    showModal('ยืนยัน', 'การดึงข้อมูลจะนำข้อมูลจาก Google Sheets มาเขียนทับข้อมูลในเครื่องนี้ ยืนยันหรือไม่?', 'confirm', async () => {
-                        closeModal();
-                        isUploading.value = true;
-                        try {
-                            const res = await fetch(APPS_SCRIPT_URL, {
-                                method: 'POST',
-                                body: JSON.stringify({ action: 'loadData' })
-                            });
-                            const data = await res.json();
-                            if(data.status === 'success') {
-                                if (data.data.students) students.value = data.data.students;
-                                if (data.data.attendance) attendance.value = data.data.attendance;
-                                if (data.data.tasks) tasks.value = data.data.tasks;
-                                showModal('สำเร็จ', 'ดึงข้อมูลจาก Google Sheets สำเร็จแล้ว! 📥');
-                            } else {
-                                throw new Error(data.message);
-                            }
-                        } catch (e) {
-                            showModal('ข้อผิดพลาด', 'ดึงข้อมูลไม่สำเร็จ: ' + e.toString());
-                        } finally {
-                            isUploading.value = false;
-                        }
-                    });
                 };
 
                 // Methods - Student Dashboard
@@ -1211,7 +1218,6 @@
                 };
 
                 const exportExcelAttendance = () => {
-                    // สร้าง CSV อย่างง่าย
                     let csv = "ที่,รหัสนักเรียน,ชื่อ-สกุล,ชั้น,มาเรียน,ขาด,ลา,รวม,ร้อยละ,ผล\n";
                     filteredStudentsForReport.value.forEach((std, i) => {
                         const stat = getAttendanceStats(std.id);
@@ -1253,8 +1259,8 @@
                 };
 
                 onMounted(() => {
-                    setTimeout(() => isLoading.value = false, 800);
                     document.getElementById('meta-theme-color').content = settings.value.themeColor;
+                    loadDataFromCloud(true); // โหลดข้อมูลสดจากออนไลน์ทันทีที่เปิดเว็บ
                 });
 
                 return {
@@ -1271,7 +1277,7 @@
                     getTasksForStudent, addStudent, deleteStudent, importStudents, exportStudents, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
                     exportJpg, exportExcelAttendance, exportExcelReport, printPage,
-                    saveDataToCloud, loadDataFromCloud
+                    saveDataToCloud, loadDataFromCloud, isOnlineSyncing
                 };
             }
         }).mount('#app');
