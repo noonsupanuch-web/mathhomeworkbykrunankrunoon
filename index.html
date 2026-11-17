@@ -185,27 +185,27 @@
                         
                         <div class="w-full flex justify-center mb-[-45px] md:mb-[-60px] relative z-20 cute-float">
                             <img v-if="settings.loginBanner" :src="settings.loginBanner" alt="Login Banner" class="h-28 md:h-36 object-contain drop-shadow-xl hover:scale-105 transition-transform" />
-                            <div v-else class="w-[90%] max-w-[400px] py-5 px-6 md:py-6 md:px-8 rounded-[2rem] border-4 md:border-[6px] bg-white shadow-xl flex items-center justify-center gap-2 md:gap-4 overflow-hidden" :style="{ borderColor: settings.themeColor }">
+                            <div v-else class="w-[90%] max-w-[400px] py-5 px-6 md:py-6 md:px-8 rounded-[2rem] border-4 md:border-[6px] border-white shadow-xl flex items-center justify-center gap-2 md:gap-4 overflow-hidden" :style="{ backgroundColor: settings.themeColor }">
                                 <span class="text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐰</span>
-                                <span class="text-2xl md:text-3xl text-black font-black drop-shadow-sm text-center tracking-wide">ยินดีต้อนรับ!</span>
+                                <span class="text-2xl md:text-3xl text-white font-black drop-shadow-sm text-center tracking-wide">ต้อนรับ!</span>
                                 <span class="text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐻</span>
                             </div>
                         </div>
 
-                        <div class="bg-white p-8 md:p-12 pt-20 md:pt-28 rounded-[2.5rem] shadow-2xl w-full max-w-lg border-4 relative z-10" :style="{ borderColor: settings.themeColor + '40' }">
+                        <div class="bg-white p-8 md:p-12 pt-20 md:pt-28 rounded-[2.5rem] shadow-2xl w-full max-w-lg border-[6px] relative z-10" :style="{ borderColor: settings.themeColor }">
                             
-                            <div class="relative w-full max-w-sm mx-auto mb-8 rounded-full p-2 flex justify-between shadow-inner bg-gray-100/80 border-2" :style="{ borderColor: settings.themeColor + '20' }">
+                            <div class="relative w-full max-w-sm mx-auto mb-8 rounded-full p-2 flex justify-between shadow-inner bg-gray-100/80 border-2 border-transparent">
                                 <button @click="loginMode = 'student'" 
-                                        class="flex-1 py-3 rounded-full font-black text-lg transition-all duration-300 z-10 flex items-center justify-center gap-2 border-2" 
-                                        :class="loginMode === 'student' ? 'text-black shadow-md scale-105 bg-white' : 'text-gray-500 hover:text-gray-700 border-transparent'" 
-                                        :style="loginMode === 'student' ? { borderColor: settings.themeColor } : {}">
+                                        class="flex-1 py-3 rounded-full font-black text-lg transition-all duration-300 z-10 flex items-center justify-center gap-2" 
+                                        :class="loginMode === 'student' ? 'text-white shadow-md scale-105' : 'text-gray-500 hover:text-gray-700'" 
+                                        :style="loginMode === 'student' ? { backgroundColor: settings.themeColor } : {}">
                                     <img v-if="settings.iconStudent" :src="settings.iconStudent" class="w-7 h-7 object-contain drop-shadow-sm" />
                                     <span v-else>👧👦</span> นักเรียน
                                 </button>
                                 <button @click="loginMode = 'admin'" 
-                                        class="flex-1 py-3 rounded-full font-black text-lg transition-all duration-300 z-10 flex items-center justify-center gap-2 border-2" 
-                                        :class="loginMode === 'admin' ? 'text-black shadow-md scale-105 bg-white' : 'text-gray-500 hover:text-gray-700 border-transparent'" 
-                                        :style="loginMode === 'admin' ? { borderColor: settings.themeColor } : {}">
+                                        class="flex-1 py-3 rounded-full font-black text-lg transition-all duration-300 z-10 flex items-center justify-center gap-2" 
+                                        :class="loginMode === 'admin' ? 'text-white shadow-md scale-105' : 'text-gray-500 hover:text-gray-700'" 
+                                        :style="loginMode === 'admin' ? { backgroundColor: settings.themeColor } : {}">
                                     <img v-if="settings.iconTeacher" :src="settings.iconTeacher" class="w-7 h-7 object-contain drop-shadow-sm" />
                                     <span v-else>👩‍🏫</span> คุณครู
                                 </button>
