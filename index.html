@@ -22,6 +22,9 @@
     <!-- HTML2Canvas สำหรับส่งออกรูปภาพ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+    <!-- SheetJS สำหรับนำเข้าและส่งออก Excel/CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -92,6 +95,28 @@
 <body class="transition-all duration-500 min-h-screen relative" id="app-container">
 
     <div id="app" class="min-h-screen relative flex justify-center items-center p-4 md:p-8" :style="{ backgroundColor: settings.themeColor + '10' }">
+        
+        <!-- Global Modal (กล่องข้อความแจ้งเตือน/ยืนยัน) -->
+        <transition name="fade">
+            <div v-if="modal.isOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl text-center border-4" :style="{ borderColor: settings.themeColor }">
+                    <div class="text-5xl mb-4 cute-float" v-if="modal.type === 'confirm'">🤔</div>
+                    <div class="text-5xl mb-4 cute-float" v-else>💡</div>
+                    <h3 class="text-2xl font-extrabold mb-2 text-gray-800">{{ modal.title }}</h3>
+                    <p class="text-gray-600 font-bold mb-6 text-lg">{{ modal.message }}</p>
+                    
+                    <div class="flex gap-3 justify-center">
+                        <button v-if="modal.type === 'confirm'" @click="closeModal" class="px-6 py-3 rounded-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
+                            ยกเลิก
+                        </button>
+                        <button @click="modal.onConfirm ? modal.onConfirm() : closeModal()" class="px-6 py-3 rounded-xl font-bold text-white shadow-md hover:scale-105 transition-transform flex-1" :style="{ backgroundColor: settings.themeColor }">
+                            {{ modal.type === 'confirm' ? 'ยืนยัน' : 'ตกลงจ้า' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <!-- Student Profile Modal -->
         <transition name="fade">
             <div v-if="viewingStudent" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -476,12 +501,23 @@
                             <div class="bg-white p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
                                 <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
                                     <h3 class="text-xl font-bold" :style="{ color: settings.themeColor }">เพิ่มนักเรียนใหม่</h3>
-                                    <div class="flex gap-2">
-                                        <input type="file" id="importCsv" accept=".csv" @change="importStudents" class="hidden" />
-                                        <label for="importCsv" class="cursor-pointer px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow hover:bg-green-600 transition-colors flex items-center">📥 นำเข้า CSV</label>
-                                        <button @click="exportStudents" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600 transition-colors">📤 ส่งออก CSV</button>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button @click="showOnlineImport = !showOnlineImport" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow hover:bg-indigo-600 transition-colors flex items-center gap-1">🌐 นำเข้าจากลิงก์ออนไลน์</button>
+                                        <input type="file" id="importFile" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importStudentsFile" class="hidden" />
+                                        <label for="importFile" class="cursor-pointer px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow hover:bg-green-600 transition-colors flex items-center">📥 นำเข้า (Excel/CSV)</label>
+                                        <button @click="exportStudentsExcel" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600 transition-colors">📤 ส่งออก (Excel)</button>
                                     </div>
                                 </div>
+                                
+                                <div v-if="showOnlineImport" class="w-full bg-indigo-50 p-4 rounded-xl border-2 border-indigo-200 mb-4 animate-fade-in shadow-sm">
+                                    <label class="block font-bold text-indigo-800 mb-2">วางลิงก์ Google Sheets (ต้องแชร์แบบ "ทุกคนที่มีลิงก์ดูได้")</label>
+                                    <div class="flex flex-col sm:flex-row gap-2">
+                                        <input type="text" v-model="onlineSheetUrl" class="flex-1 p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }" placeholder="https://docs.google.com/spreadsheets/d/...">
+                                        <button @click="importFromOnlineSheet" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-md transition-transform hover:scale-105" :disabled="isUploading">ดึงข้อมูลนักเรียน</button>
+                                    </div>
+                                    <p class="text-xs text-indigo-600 mt-2">* ใช้รูปแบบคอลัมน์: รหัส | ชื่อเล่น | ชื่อ-สกุล | ชั้น | รหัสผ่าน(เว้นได้) | URLโปรไฟล์(เว้นได้)</p>
+                                </div>
+
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
                                     <input type="text" v-model="newStudent.code" placeholder="รหัสนักเรียน (สำหรับ Login)" class="border-2 rounded-xl p-3 focus:outline-none font-bold" :style="{ borderColor: settings.themeColor + '40' }">
                                     <input type="text" v-model="newStudent.name" placeholder="ชื่อเล่น" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
@@ -542,8 +578,8 @@
                                                     <input type="text" v-model="std.password" placeholder="ส่วนกลาง" class="w-full border-2 rounded p-2 text-sm bg-white focus:outline-none text-center focus:border-blue-400">
                                                 </td>
                                                 <td class="p-2 flex justify-center gap-1">
-                                                    <button @click="viewingStudent = std" class="text-blue-500 hover:text-blue-700 font-bold p-2 bg-blue-50 rounded-lg text-xs transition-colors shadow-sm">โปรไฟล์</button>
-                                                    <button @click="deleteStudent(std.id)" class="text-red-500 hover:text-red-700 font-bold p-2 bg-red-50 rounded-lg text-xs transition-colors shadow-sm">ลบ</button>
+                                                    <button @click="viewingStudent = std" class="text-blue-600 hover:text-blue-800 font-bold px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg text-xs transition-colors shadow-sm flex items-center gap-1">👤 โปรไฟล์</button>
+                                                    <button @click="deleteStudent(std.id)" class="text-red-600 hover:text-red-800 font-bold px-3 py-2 bg-red-100 hover:bg-red-200 rounded-lg text-xs transition-colors shadow-sm flex items-center gap-1">🗑️ ลบ</button>
                                                 </td>
                                             </tr>
                                             <tr v-if="filteredStudentsForManagement.length === 0">
@@ -821,6 +857,9 @@
                 const newStudent = ref({ code: '', name: '', fullname: '', classRoom: '', password: '', profileUrl: '' });
                 const studentSearch = ref('');
                 const viewingStudent = ref(null);
+
+                const showOnlineImport = ref(false);
+                const onlineSheetUrl = ref('https://docs.google.com/spreadsheets/d/12pP6vamAWtupqQ_fd91kF9wwdNzqciMqZS1MhxnQSPg/edit?gid=0#gid=0');
 
                 // สำหรับลบนักเรียนหลายคน
                 const selectedStudents = ref([]);
@@ -1119,48 +1158,102 @@
                     });
                 };
 
-                const importStudents = (e) => {
+                const parseImportedData = (rows) => {
+                    let startIndex = 0;
+                    if (rows.length > 0 && (String(rows[0][0]).includes('รหัส') || String(rows[0][0]).toLowerCase() === 'code')) {
+                        startIndex = 1;
+                    }
+                    const newStds = [];
+                    for (let i = startIndex; i < rows.length; i++) {
+                        const cols = rows[i];
+                        if (!cols || cols.length < 2) continue;
+                        if (!cols[0] || !cols[1]) continue;
+                        newStds.push({
+                            id: Date.now().toString() + Math.random().toString(36).substring(2,9),
+                            code: String(cols[0] || '').trim(),
+                            name: String(cols[1] || '').trim(),
+                            fullname: String(cols[2] || '').trim(),
+                            classRoom: String(cols[3] || '').trim(),
+                            password: String(cols[4] || '').trim(),
+                            profileUrl: String(cols[5] || '').trim(),
+                            studentNo: students.value.length + newStds.length + 1
+                        });
+                    }
+                    return newStds;
+                };
+
+                const importFromOnlineSheet = async () => {
+                    if (!onlineSheetUrl.value) return showModal('แจ้งเตือน', 'กรุณาวางลิงก์ Google Sheets');
+                    const match = onlineSheetUrl.value.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                    if (!match) return showModal('แจ้งเตือน', 'ลิงก์ไม่ถูกต้อง ไม่พบ Sheet ID');
+                    
+                    isUploading.value = true;
+                    try {
+                        const sheetId = match[1];
+                        // ใช้ gviz endpoint เพื่อเลี่ยงปัญหา CORS
+                        const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+                        
+                        const res = await fetch(exportUrl);
+                        if (!res.ok) throw new Error('ดึงข้อมูลไม่ได้ โปรดตรวจสอบว่า Sheet เปิดแชร์ "ทุกคนที่มีลิงก์" (Anyone with the link)');
+                        
+                        const text = await res.text();
+                        // Parse CSV แบบง่าย (รองรับ double quotes จาก gviz)
+                        const rows = text.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+                        
+                        const newStds = parseImportedData(rows);
+                        if (newStds.length > 0) {
+                            students.value.push(...newStds);
+                            showModal('สำเร็จ', `ดึงข้อมูลนักเรียน ${newStds.length} คน เรียบร้อยแล้ว! ✨`);
+                            showOnlineImport.value = false;
+                        } else {
+                            showModal('แจ้งเตือน', 'ไม่พบข้อมูล หรือรูปแบบตารางไม่ถูกต้องจ้า');
+                        }
+                    } catch (err) {
+                        showModal('ข้อผิดพลาด', err.message);
+                    } finally {
+                        isUploading.value = false;
+                    }
+                };
+
+                const importStudentsFile = (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                        const text = event.target.result;
-                        const rows = text.split('\n').map(r => r.trim()).filter(r => r);
-                        const newStds = [];
-                        for(let i = 1; i < rows.length; i++) {
-                            const cols = rows[i].split(',');
-                            if (cols.length >= 2) {
-                                newStds.push({
-                                    id: Date.now().toString() + i,
-                                    code: cols[0]?.trim() || '',
-                                    name: cols[1]?.trim() || '',
-                                    fullname: cols[2]?.trim() || '',
-                                    classRoom: cols[3]?.trim() || '',
-                                    password: cols[4]?.trim() || '',
-                                    profileUrl: cols[5]?.trim() || '',
-                                    studentNo: students.value.length + newStds.length + 1
-                                });
+                        const data = event.target.result;
+                        let rows = [];
+                        try {
+                            const workbook = XLSX.read(data, {type: 'binary'});
+                            const firstSheet = workbook.SheetNames[0];
+                            rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {header: 1});
+                            
+                            const newStds = parseImportedData(rows);
+                            if (newStds.length > 0) {
+                                students.value.push(...newStds);
+                                showModal('สำเร็จ', `นำเข้านักเรียน ${newStds.length} คน เรียบร้อย! 📁`);
+                            } else {
+                                showModal('แจ้งเตือน', 'ไม่พบข้อมูลนักเรียน หรือรูปแบบไม่ถูกต้อง');
                             }
-                        }
-                        if(newStds.length > 0) {
-                            students.value.push(...newStds);
-                            showModal('สำเร็จ', `นำเข้านักเรียน ${newStds.length} คน เรียบร้อย`);
+                        } catch (err) {
+                            showModal('ข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบไฟล์ Excel/CSV อีกครั้ง');
                         }
                     };
-                    reader.readAsText(file);
+                    reader.readAsBinaryString(file);
                     e.target.value = ''; 
                 };
 
-                const exportStudents = () => {
-                    let csv = "รหัส,ชื่อเล่น,ชื่อ-สกุล,ชั้น,รหัสผ่าน,URLโปรไฟล์\n";
+                const exportStudentsExcel = () => {
+                    const data = [
+                        ['รหัส', 'ชื่อเล่น', 'ชื่อ-สกุล', 'ชั้น', 'รหัสผ่าน', 'URLโปรไฟล์']
+                    ];
                     students.value.forEach(s => {
-                        csv += `${s.code},${s.name},${s.fullname},${s.classRoom},${s.password || ''},${s.profileUrl || ''}\n`;
+                        data.push([s.code, s.name, s.fullname, s.classRoom, s.password || '', s.profileUrl || '']);
                     });
-                    const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
-                    const link = document.createElement("a");
-                    link.href = URL.createObjectURL(blob);
-                    link.download = `รายชื่อนักเรียน.csv`;
-                    link.click();
+                    
+                    const ws = XLSX.utils.aoa_to_sheet(data);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "รายชื่อนักเรียน");
+                    XLSX.writeFile(wb, `รายชื่อนักเรียน_${new Date().toISOString().split('T')[0]}.xlsx`);
                 };
 
                 // Methods - Settings
@@ -1193,34 +1286,57 @@
                     if (fileInput) fileInput.value = '';
                 };
 
-                const uploadImageToDrive = async (file) => {
-                    return new Promise((resolve, reject) => {
+                // ฟังก์ชันย่อขนาดรูปภาพก่อนอัปโหลด ป้องกันขนาดไฟล์เกิน
+                const compressImage = (file, maxWidth = 800) => {
+                    return new Promise((resolve) => {
                         const reader = new FileReader();
-                        reader.onload = async () => {
-                            const base64 = reader.result;
-                            try {
-                                const response = await fetch(APPS_SCRIPT_URL, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ทะลุ CORS
-                                    body: JSON.stringify({
-                                        action: 'uploadImage',
-                                        fileName: file.name,
-                                        mimeType: file.type,
-                                        base64: base64
-                                    })
-                                });
-                                const result = await response.json();
-                                if (result.status === 'success') {
-                                    resolve(result.url);
-                                } else {
-                                    reject(result.message);
-                                }
-                            } catch (e) {
-                                reject('เกิดข้อผิดพลาดในการเชื่อมต่อ (อาจจะลืมใส่ URL หรือไม่ได้ Deploy เป็นเวอร์ชันใหม่จ้า)');
-                            }
-                        };
-                        reader.onerror = () => reject('อ่านไฟล์ไม่สำเร็จ');
                         reader.readAsDataURL(file);
+                        reader.onload = (event) => {
+                            const img = new Image();
+                            img.src = event.target.result;
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                let width = img.width;
+                                let height = img.height;
+                                if (width > maxWidth) {
+                                    height = Math.round((height * maxWidth) / width);
+                                    width = maxWidth;
+                                }
+                                canvas.width = width;
+                                canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                resolve(canvas.toDataURL('image/jpeg', 0.8)); // แปลงเป็น JPEG คุณภาพ 80%
+                            };
+                        };
+                    });
+                };
+
+                const uploadImageToDrive = async (file) => {
+                    return new Promise(async (resolve, reject) => {
+                        try {
+                            // แปลงและบีบอัดไฟล์ภาพ
+                            const base64DataUrl = await compressImage(file);
+                            
+                            const response = await fetch(APPS_SCRIPT_URL, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ทะลุ CORS
+                                body: JSON.stringify({
+                                    action: 'uploadImage',
+                                    fileName: file.name,
+                                    mimeType: 'image/jpeg', 
+                                    base64: base64DataUrl
+                                })
+                            });
+                            const result = await response.json();
+                            if (result.status === 'success') {
+                                resolve(result.url);
+                            } else {
+                                reject(result.message);
+                            }
+                        } catch (e) {
+                            reject('เกิดข้อผิดพลาดในการเชื่อมต่อ (โปรดตรวจสอบลิงก์ Apps Script ว่าถูกต้องไหม)');
+                        }
                     });
                 };
 
@@ -1363,10 +1479,10 @@
                     document.getElementById('meta-theme-color').content = settings.value.themeColor;
                     loadDataFromCloud(true); // โหลดข้อมูลสดจากออนไลน์ทันทีที่เปิดเว็บ
 
-                    // ดึงข้อมูลอัตโนมัติเบื้องหลังทุก 15 วินาที เพื่อให้ตรงกันทุกเครื่องแบบเรียลไทม์
+                    // ดึงข้อมูลอัตโนมัติเบื้องหลังทุก 5 วินาที เพื่อให้ตรงกันทุกเครื่องแบบเรียลไทม์
                     setInterval(() => {
                         loadDataSilently();
-                    }, 15000);
+                    }, 5000);
 
                     // ดึงข้อมูลซิงค์ทันทีเมื่อผู้ใช้สลับหน้าจอกลับมาที่แอปนี้
                     document.addEventListener('visibilitychange', () => {
@@ -1387,8 +1503,9 @@
                     pendingFile, pendingImageUrl, onFileChange, removePendingFile, isUploading,
                     studentSearch, viewingStudent, filteredStudentsForManagement, uploadProfilePic,
                     selectedStudents, isAllStudentsSelected, toggleSelectAllStudents, deleteSelectedStudents,
+                    showOnlineImport, onlineSheetUrl, importFromOnlineSheet, importStudentsFile, exportStudentsExcel,
                     getAttendanceStatusDisplay, toggleAttendance, getAttendanceStats, getStudentAllTimeStats,
-                    getTasksForStudent, addStudent, deleteStudent, importStudents, exportStudents, saveSettings, uploadSettingImage,
+                    getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
                     exportJpg, exportExcelAttendance, exportExcelReport, printPage,
                     saveDataToCloud, loadDataFromCloud, isOnlineSyncing
