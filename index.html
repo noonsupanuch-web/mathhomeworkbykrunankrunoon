@@ -1007,21 +1007,28 @@
 
                 // Methods - Auth
                 const login = () => {
+                    // แปลงค่าที่พิมพ์มาให้เป็นข้อความ (String) และตัดช่องว่างซ้ายขวาทิ้ง ป้องกันการพิมพ์เว้นวรรคเกิน
+                    const trimmedName = String(loginName.value).trim();
+                    const trimmedCode = String(loginCode.value).trim();
+                    
                     if (loginMode.value === 'admin') {
-                        // รองรับหลายรหัสผ่าน ป้องกันกรณีข้อมูลบนคลาวด์ยังไม่มีรหัส
                         const adminPassStr = settings.value.adminPassword || 'nannoonadmin,noon031138,nan111';
                         const adminPasswords = adminPassStr.split(',').map(p => p.trim());
-                        if (adminPasswords.includes(loginCode.value.trim())) {
+                        if (adminPasswords.includes(trimmedCode)) {
                             user.value = { role: 'admin' };
                             loginCode.value = '';
                         } else {
                             showModal('อุ๊ย!', 'รหัสผ่านแอดมินไม่ถูกต้องจ้า', 'info');
                         }
                     } else {
-                        const student = students.value.find(s => s.code === loginName.value);
+                        // ค้นหานักเรียนโดยแปลงรหัสในฐานข้อมูลเป็น String เพื่อป้องกันบั๊กจาก Google Sheets ที่มองเป็นตัวเลข
+                        const student = students.value.find(s => String(s.code).trim() === trimmedName);
                         if (student) {
-                            const validPassword = student.password ? student.password : settings.value.studentPassword;
-                            if (loginCode.value !== validPassword) {
+                            const validPassword = (student.password && String(student.password).trim() !== '') 
+                                                    ? String(student.password).trim() 
+                                                    : String(settings.value.studentPassword).trim();
+                                                    
+                            if (trimmedCode !== validPassword) {
                                 showModal('อุ๊ย!', 'รหัสผ่านนักเรียนไม่ถูกต้อง (สอบถามคุณครูนะ)', 'info');
                                 return;
                             }
@@ -1029,7 +1036,7 @@
                             loginName.value = '';
                             loginCode.value = '';
                         } else {
-                            showModal('เสียใจด้วย', 'ไม่พบรหัสนักเรียนนี้ในระบบจ้า', 'info');
+                            showModal('เสียใจด้วย', 'ไม่พบรหัสนักเรียนนี้ในระบบจ้า (ลองตรวจสอบความถูกต้องดูอีกครั้ง)', 'info');
                         }
                     }
                 };
@@ -1287,7 +1294,7 @@
                 };
 
                 // ฟังก์ชันย่อขนาดรูปภาพก่อนอัปโหลด ป้องกันขนาดไฟล์เกิน
-                const compressImage = (file, maxWidth = 800) => {
+                const compressImage = (file, maxWidth = 600) => {
                     return new Promise((resolve) => {
                         const reader = new FileReader();
                         reader.readAsDataURL(file);
@@ -1315,27 +1322,36 @@
                 const uploadImageToDrive = async (file) => {
                     return new Promise(async (resolve, reject) => {
                         try {
-                            // แปลงและบีบอัดไฟล์ภาพ
-                            const base64DataUrl = await compressImage(file);
+                            // แปลงและบีบอัดไฟล์ภาพ (ลดเหลือ 600px เพื่อให้โหลดไวสุดๆ)
+                            const base64DataUrl = await compressImage(file, 600);
+                            
+                            const payload = {
+                                action: 'uploadImage',
+                                fileName: file.name || 'image.jpg',
+                                mimeType: 'image/jpeg', 
+                                base64: base64DataUrl
+                            };
                             
                             const response = await fetch(APPS_SCRIPT_URL, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ทะลุ CORS
-                                body: JSON.stringify({
-                                    action: 'uploadImage',
-                                    fileName: file.name,
-                                    mimeType: 'image/jpeg', 
-                                    base64: base64DataUrl
-                                })
+                                redirect: 'follow',
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                body: JSON.stringify(payload)
                             });
-                            const result = await response.json();
-                            if (result.status === 'success') {
-                                resolve(result.url);
-                            } else {
-                                reject(result.message);
+                            
+                            const text = await response.text();
+                            try {
+                                const result = JSON.parse(text);
+                                if (result.status === 'success') {
+                                    resolve(result.url);
+                                } else {
+                                    reject(result.message);
+                                }
+                            } catch(err) {
+                                reject('การตอบกลับจากเซิร์ฟเวอร์ผิดปกติ');
                             }
                         } catch (e) {
-                            reject('เกิดข้อผิดพลาดในการเชื่อมต่อ (โปรดตรวจสอบลิงก์ Apps Script ว่าถูกต้องไหม)');
+                            reject('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว โปรดเช็คอินเทอร์เน็ต');
                         }
                     });
                 };
