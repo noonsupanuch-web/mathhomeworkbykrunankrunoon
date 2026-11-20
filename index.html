@@ -272,7 +272,13 @@
                                     </div>
                                 </div>
                                 
-                                <button type="submit" class="w-full text-white font-black text-xl py-4 rounded-[1.5rem] cute-btn hover:scale-105 shadow-[0_10px_25px_-5px_rgba(244,114,182,0.6)] flex justify-center items-center gap-2 mt-8 border-b-4 border-pink-600 bg-gradient-to-r from-pink-400 to-pink-500 active:border-b-0 active:translate-y-1 transition-all">
+                                <button type="submit" 
+                                    class="w-full text-white font-black text-xl py-4 rounded-[1.5rem] cute-btn hover:scale-105 flex justify-center items-center gap-2 mt-8 border-b-4 active:border-b-0 active:translate-y-1 transition-all"
+                                    :style="{ 
+                                        background: `linear-gradient(135deg, ${settings.themeColor}, ${settings.themeColor}dd)`,
+                                        borderColor: settings.themeColor + '99',
+                                        boxShadow: `0 10px 25px -5px ${settings.themeColor}80`
+                                    }">
                                     เข้าสู่ระบบ ✨
                                 </button>
                             </form>
@@ -1403,16 +1409,24 @@
                     });
                     newTask.value = { date: new Date().toISOString().split('T')[0], subject: '', detail: '' };
                     
-                    if(uploadedUrl) showModal('สำเร็จ', 'จดการบ้านและอัปโหลดรูปเรียบร้อยแล้ว!');
+                    showModal('สำเร็จ', 'บันทึกการบ้านลงระบบเรียบร้อยแล้วจ้า! 📝✨');
+                    saveDataToCloud(); // บังคับให้ระบบส่งข้อมูลขึ้นออนไลน์ทันที
                 };
 
                 const toggleTaskStatus = (taskId) => {
                     const task = tasks.value.find(t => t.id === taskId);
-                    if(task) task.isCompleted = !task.isCompleted;
+                    if(task) {
+                        task.isCompleted = !task.isCompleted;
+                        saveDataToCloud(); // บังคับให้ระบบอัปเดตออนไลน์ทันที
+                    }
                 };
 
                 const deleteTask = (taskId) => {
-                    tasks.value = tasks.value.filter(t => t.id !== taskId);
+                    showModal('ยืนยัน', 'ต้องการลบการบ้านชิ้นนี้ใช่หรือไม่?', 'confirm', () => {
+                        tasks.value = tasks.value.filter(t => t.id !== taskId);
+                        saveDataToCloud(); // บังคับให้ระบบอัปเดตออนไลน์ทันที
+                        closeModal();
+                    });
                 };
 
                 const getStudentTodayStatus = () => {
@@ -1456,26 +1470,32 @@
                 };
 
                 const exportExcelReport = () => {
-                    let csv = "รหัสนักเรียน,ชื่อเล่น,ชื่อ-สกุล,ชั้นเรียน,วันที่สั่ง,วิชา,รายละเอียดงาน,สถานะ,ลิงก์รูปภาพแนบ\n";
+                    const data = [
+                        ['รหัสนักเรียน', 'ชื่อเล่น', 'ชื่อ-สกุล', 'ชั้นเรียน', 'วันที่สั่ง', 'วิชา', 'รายละเอียดงาน', 'สถานะ', 'ลิงก์รูปภาพแนบ']
+                    ];
                     students.value.forEach(std => {
                         const stTasks = getTasksForStudent(std.id);
                         stTasks.forEach(t => {
                             const status = t.isCompleted ? 'เสร็จแล้ว' : 'ยังไม่เสร็จ';
                             const imgUrl = t.imageUrl || '-';
-                            // ใส่ "" ครอบข้อความเพื่อป้องกันลูกน้ำ (,) ทำตารางพัง
-                            const safeSubject = `"${t.subject.replace(/"/g, '""')}"`;
-                            const safeDetail = `"${t.detail.replace(/"/g, '""')}"`;
-                            const safeFullname = `"${std.fullname || ''}"`;
-                            const safeName = `"${std.name || ''}"`;
-                            
-                            csv += `${std.code},${safeName},${safeFullname},${std.classRoom||'-'},${t.date},${safeSubject},${safeDetail},${status},${imgUrl}\n`;
+                            data.push([
+                                std.code,
+                                std.name || '',
+                                std.fullname || '',
+                                std.classRoom || '-',
+                                t.date,
+                                t.subject,
+                                t.detail,
+                                status,
+                                imgUrl
+                            ]);
                         });
                     });
-                    const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
-                    const link = document.createElement("a");
-                    link.href = URL.createObjectURL(blob);
-                    link.download = `รายงานการบ้าน_${reportMode.value}.csv`;
-                    link.click();
+                    
+                    const ws = XLSX.utils.aoa_to_sheet(data);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "รายงานการบ้าน");
+                    XLSX.writeFile(wb, `รายงานการบ้าน_${reportMode.value}_${new Date().toISOString().split('T')[0]}.xlsx`);
                 };
 
                 const printPage = (elId) => {
