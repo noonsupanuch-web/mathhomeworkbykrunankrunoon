@@ -136,6 +136,13 @@
                             </label>
                         </div>
                         
+                        <!-- ปุ่มลบรูปภาพโปรไฟล์ -->
+                        <div class="text-center mb-4" v-if="user && (user.role === 'admin' || user.id === viewingStudent.id) && viewingStudent.profileUrl">
+                            <button @click="removeProfilePic(viewingStudent)" class="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 px-4 py-1.5 rounded-full border border-red-200 shadow-sm transition-transform hover:scale-105">
+                                🗑️ ลบรูปโปรไฟล์ทิ้ง
+                            </button>
+                        </div>
+                        
                         <!-- โหมดดูข้อมูลปกติ (แสดงให้นักเรียนเห็น) -->
                         <div v-if="!user || user.role !== 'admin'" class="text-center mb-6">
                             <h3 class="text-2xl md:text-3xl font-bold mb-1" :style="{ color: settings.themeColor }">{{ viewingStudent.name }}</h3>
@@ -444,6 +451,7 @@
                                         <h3 class="font-bold text-xl" :style="{ color: settings.themeColor }">เช็คชื่อประจำวัน</h3>
                                         <input type="date" v-model="attendanceDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
                                     </div>
+                                    <p class="text-xs text-gray-500 mb-2 font-bold">💡 ทริค: หากต้องการดูหรือแก้ไขการเช็คชื่อย้อนหลัง ให้เปลี่ยนวันที่ในช่องด้านบนได้เลยจ้า</p>
                                     
                                     <!-- เพิ่มปุ่ม มาเรียนทั้งหมด และ บันทึก -->
                                     <div v-if="filteredStudentsForReport.length > 0" class="flex justify-end gap-2 mb-4 bg-gray-50 p-3 rounded-xl border" :style="{ borderColor: settings.themeColor + '20' }">
@@ -486,17 +494,20 @@
                                     <table class="w-full text-center border-collapse border border-gray-300 min-w-[1000px] text-sm">
                                         <thead>
                                             <tr class="bg-blue-600 text-white font-bold">
-                                                <th class="border border-blue-700 p-2 w-12">ที่</th>
-                                                <th class="border border-blue-700 p-2 w-24">รหัสนักเรียน</th>
-                                                <th class="border border-blue-700 p-2 text-left w-48">ชื่อ-สกุล</th>
-                                                <th class="border border-blue-700 p-2 w-16">ชั้น</th>
-                                                <th class="border border-blue-700 p-2 w-16">มาเรียน</th>
-                                                <th class="border border-blue-700 p-2 w-16">ขาด</th>
-                                                <th class="border border-blue-700 p-2 w-16">ลา</th>
-                                                <th class="border border-blue-700 p-2 w-20">เข้าห้องช้า</th>
-                                                <th class="border border-blue-700 p-2 w-20">กิจกรรมอื่น</th>
-                                                <th class="border border-blue-700 p-2 w-16">หนีเรียน</th>
-                                                <th class="border border-blue-700 p-2 w-24">รวมเวลาเรียน</th>
+                                                <th class="border border-blue-700 p-2 w-10">ที่</th>
+                                                <th class="border border-blue-700 p-2 w-20">รหัส</th>
+                                                <th class="border border-blue-700 p-2 text-left w-40">ชื่อ-สกุล</th>
+                                                
+                                                <!-- แสดงคอลัมน์วันที่แบบไดนามิก -->
+                                                <th v-for="date in dynamicAttendanceDates" :key="date" class="border border-blue-700 p-1 text-xs w-8 whitespace-nowrap bg-blue-500">
+                                                    {{ date.split('-')[2] }}/{{ date.split('-')[1] }}
+                                                </th>
+
+                                                <th class="border border-blue-700 p-2 w-12 bg-green-600">มา</th>
+                                                <th class="border border-blue-700 p-2 w-12 bg-purple-600">กิจ</th>
+                                                <th class="border border-blue-700 p-2 w-12 bg-red-500">ขาด</th>
+                                                <th class="border border-blue-700 p-2 w-12 bg-yellow-500">ลา</th>
+                                                <th class="border border-blue-700 p-2 w-16">รวม</th>
                                                 <th class="border border-blue-700 p-2 w-16">%</th>
                                                 <th class="border border-blue-700 p-2 w-16">ผล</th>
                                             </tr>
@@ -506,94 +517,38 @@
                                                 <td class="border border-gray-300 p-2">{{ std.studentNo || (idx + 1) }}</td>
                                                 <td class="border border-gray-300 p-2">{{ std.code }}</td>
                                                 <td class="border border-gray-300 p-2 text-left whitespace-nowrap">{{ std.fullname || std.name }}</td>
-                                                <td class="border border-gray-300 p-2">{{ std.classRoom || '-' }}</td>
                                                 
-                                                <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).present }}</td>
-                                                <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).absent }}</td>
-                                                <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).leave }}</td>
-                                                <td class="border border-gray-300 p-2">0</td>
-                                                <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).activity }}</td>
-                                                <td class="border border-gray-300 p-2">0</td>
-                                                <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).total }}</td>
-                                                <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).percent }}%</td>
+                                                <!-- แสดงเครื่องหมายรายวัน -->
+                                                <td v-for="date in dynamicAttendanceDates" :key="date" class="border border-gray-300 p-1 text-center text-sm font-bold">
+                                                    <span v-if="getAttendanceMark(std.id, date) === '✅'" class="text-green-500">✅</span>
+                                                    <span v-else-if="getAttendanceMark(std.id, date) === '🟣'" class="text-purple-500">🟣</span>
+                                                    <span v-else-if="getAttendanceMark(std.id, date) === '❌'" class="text-red-500">❌</span>
+                                                    <span v-else-if="getAttendanceMark(std.id, date) === '🟡'" class="text-yellow-500">🟡</span>
+                                                    <span v-else class="text-gray-300">-</span>
+                                                </td>
+                                                
+                                                <td class="border border-gray-300 p-2 font-bold text-green-600">{{ getAttendanceStats(std.id).present }}</td>
+                                                <td class="border border-gray-300 p-2 font-bold text-purple-600">{{ getAttendanceStats(std.id).activity }}</td>
+                                                <td class="border border-gray-300 p-2 font-bold text-red-500">{{ getAttendanceStats(std.id).absent }}</td>
+                                                <td class="border border-gray-300 p-2 font-bold text-yellow-500">{{ getAttendanceStats(std.id).leave }}</td>
+                                                
+                                                <td class="border border-gray-300 p-2 bg-gray-50 font-bold">{{ getAttendanceStats(std.id).total }}</td>
+                                                <td class="border border-gray-300 p-2 bg-gray-50">{{ getAttendanceStats(std.id).percent }}%</td>
                                                 <td class="border border-gray-300 p-2 font-bold" :class="getAttendanceStats(std.id).pass ? 'text-green-600' : 'text-red-500'">
                                                     {{ getAttendanceStats(std.id).pass ? 'ผ่าน' : 'ไม่ผ่าน' }}
                                                 </td>
                                             </tr>
                                             <tr v-if="filteredStudentsForReport.length === 0">
-                                                <td colspan="13" class="border border-gray-300 p-6 text-gray-400 text-center">ไม่พบข้อมูลในเงื่อนไขที่เลือก</td>
+                                                <td :colspan="10 + dynamicAttendanceDates.length" class="border border-gray-300 p-6 text-gray-400 text-center">ไม่พบข้อมูลในเงื่อนไขที่เลือก</td>
                                             </tr>
                                         </tbody>
                                     </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 2.2 TAB: Reports -->
-                        <div v-if="currentAdminTab === 'reports'" class="space-y-6 fade-enter-active">
-                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50 p-4 rounded-2xl border" :style="{ borderColor: settings.themeColor + '40' }">
-                                <div class="flex flex-wrap items-center gap-4">
-                                    <label class="font-bold text-lg">ดูรายงาน:</label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="reportMode" value="daily" class="text-blue-500"> รายวัน
-                                        <input type="date" v-model="reportDate" v-if="reportMode === 'daily'" class="border rounded-xl p-1 ml-2 text-sm focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
-                                    </label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="reportMode" value="monthly" class="text-blue-500"> รายเดือน
-                                        <input type="month" v-model="reportMonth" v-if="reportMode === 'monthly'" class="border rounded-xl p-1 ml-2 text-sm focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
-                                    </label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="reportMode" value="range" class="text-blue-500"> ช่วงวันที่
-                                        <div v-if="reportMode === 'range'" class="flex items-center gap-1 ml-2">
-                                            <input type="date" v-model="reportStartDate" class="border rounded-xl p-1 text-sm focus:outline-none" :style="{ borderColor: settings.themeColor }"> ถึง
-                                            <input type="date" v-model="reportEndDate" class="border rounded-xl p-1 text-sm focus:outline-none" :style="{ borderColor: settings.themeColor }">
-                                        </div>
-                                    </label>
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <button @click="exportJpg('report-content', `รายงาน_${reportMode}`)" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600">ส่งออก JPG</button>
-                                    <button @click="exportExcelReport" class="px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow hover:bg-green-600">ส่งออก Excel</button>
-                                    <button @click="printPage('report-content')" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow hover:bg-indigo-600">พิมพ์ (Print)</button>
-                                </div>
-                            </div>
-
-                            <div id="report-content" ref="reportContent" class="space-y-6 bg-white p-6 rounded-3xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
-                                <div v-for="std in students" :key="std.id" class="border-2 rounded-2xl p-5 bg-white shadow-sm" :style="{ borderColor: settings.themeColor + '40' }">
-                                    <h3 class="font-bold text-xl mb-3 flex items-center gap-2" :style="{ color: settings.themeColor }">
-                                        <span class="bg-pink-100 p-2 rounded-full">👦👧</span> {{ std.name }} <span class="text-sm font-normal text-gray-500">(ชั้น: {{std.classRoom||'-'}} เลขที่: {{std.studentNo||'-'}})</span>
-                                    </h3>
-                                    
-                                    <p v-if="getTasksForStudent(std.id).length === 0" class="text-gray-400 font-medium pl-12">ไม่มีการบ้านที่จดไว้ในช่วงเวลานี้ 🎉</p>
-                                    
-                                    <div v-else class="overflow-x-auto">
-                                        <table class="w-full text-left border-collapse border-2 rounded-xl overflow-hidden border-gray-100">
-                                            <thead>
-                                                <tr>
-                                                    <th class="p-3 bg-gray-100 font-bold text-gray-700">วันที่</th>
-                                                    <th class="p-3 bg-gray-100 font-bold text-gray-700">วิชา</th>
-                                                    <th class="p-3 bg-gray-100 font-bold text-gray-700">รายละเอียด</th>
-                                                    <th class="p-3 bg-gray-100 font-bold text-gray-700">สถานะ</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="task in getTasksForStudent(std.id)" :key="task.id" class="border-b border-gray-100">
-                                                    <td class="p-3">{{ task.date }}</td>
-                                                    <td class="p-3 font-semibold">{{ task.subject }}</td>
-                                                    <td class="p-3">
-                                                        {{ task.detail }}
-                                                        <div v-if="task.imageUrl" class="mt-2">
-                                                            <a :href="task.imageUrl" target="_blank" class="inline-block" title="คลิกเพื่อดูรูปขนาดเต็ม">
-                                                                <img :src="task.imageUrl" class="w-24 h-24 object-cover rounded-xl border-2 hover:scale-105 transition-transform shadow-sm" :style="{ borderColor: settings.themeColor + '40' }" alt="รูปการบ้าน">
-                                                            </a>
-                                                        </div>
-                                                    </td>
-                                                    <td class="p-3">
-                                                        <span v-if="task.isCompleted" class="text-green-500 font-bold">✅ เสร็จแล้ว</span>
-                                                        <span v-else class="text-orange-500 font-bold">⏳ ยังไม่เสร็จ</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                    <div class="mt-4 flex gap-4 text-xs font-bold text-gray-600">
+                                        <span>สัญลักษณ์:</span>
+                                        <span class="text-green-500">✅ = มาเรียน</span>
+                                        <span class="text-purple-500">🟣 = กิจกรรม</span>
+                                        <span class="text-red-500">❌ = ขาดเรียน</span>
+                                        <span class="text-yellow-500">🟡 = ลา</span>
                                     </div>
                                 </div>
                             </div>
@@ -1151,6 +1106,22 @@
                     return [...new Set(usedDetails)].sort();
                 });
 
+                // ดึงรายการวันที่ทั้งหมดที่มีการเช็คชื่อ เพื่อนำไปสร้างคอลัมน์ในตารางรายงาน
+                const dynamicAttendanceDates = computed(() => {
+                    if (attMode.value === 'daily' || attendance.value.length === 0) return [];
+                    
+                    let records = attendance.value;
+                    if (attMode.value === 'monthly') {
+                        records = records.filter(a => a.date.startsWith(attMonth.value));
+                    } else if (attMode.value === 'range') {
+                        records = records.filter(a => a.date >= attStartDate.value && a.date <= attEndDate.value);
+                    }
+                    
+                    // หา unique dates และเรียงลำดับ
+                    const dates = [...new Set(records.map(a => a.date))].sort();
+                    return dates;
+                });
+
                 const filteredStudentsForReport = computed(() => {
                     if (attFilterClass.value === 'ทั้งหมด') return students.value;
                     return students.value.filter(s => s.classRoom === attFilterClass.value);
@@ -1292,6 +1263,16 @@
                     return { present, activity, absent, leave, total, percent, pass: percent >= 80 };
                 };
 
+                const getAttendanceMark = (stdId, date) => {
+                    const record = attendance.value.find(a => a.studentId === stdId && a.date === date);
+                    if (!record) return '-';
+                    if (record.status === 'present') return '✅';
+                    if (record.status === 'activity') return '🟣';
+                    if (record.status === 'absent') return '❌';
+                    if (record.status === 'leave') return '🟡';
+                    return '-';
+                };
+
                 const getStudentAllTimeStats = (stdId) => {
                     const records = attendance.value.filter(a => a.studentId === stdId);
                     const present = records.filter(a => a.status === 'present').length;
@@ -1371,6 +1352,19 @@
                         isUploading.value = false;
                         event.target.value = '';
                     }
+                };
+
+                const removeProfilePic = async (studentObj) => {
+                    showModal('ยืนยัน', 'ต้องการลบรูปโปรไฟล์ใช่หรือไม่?', 'confirm', async () => {
+                        studentObj.profileUrl = '';
+                        if (user.value && user.value.id === studentObj.id) {
+                            user.value.profileUrl = '';
+                        }
+                        hasPendingChanges = true;
+                        closeModal();
+                        await saveDataToCloud();
+                        showModal('สำเร็จ', 'ลบรูปโปรไฟล์เรียบร้อยแล้วจ้า 🗑️');
+                    });
                 };
 
                 const deleteStudent = (id) => {
@@ -1774,10 +1768,11 @@
                     uniqueClasses, filteredStudentsForReport, myTasks,
                     newTask, newStudent, modal, showModal, closeModal,
                     pendingFile, pendingImageUrl, onFileChange, removePendingFile, isUploading,
-                    studentSearch, viewingStudent, filteredStudentsForManagement, uploadProfilePic,
+                    studentSearch, viewingStudent, filteredStudentsForManagement, uploadProfilePic, removeProfilePic,
                     selectedStudents, isAllStudentsSelected, toggleSelectAllStudents, deleteSelectedStudents,
                     showOnlineImport, onlineSheetUrl, importFromOnlineSheet, importStudentsFile, exportStudentsExcel,
                     getAttendanceStatusDisplay, toggleAttendance, markAllPresent, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
+                    dynamicAttendanceDates, getAttendanceMark,
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
                     exportJpg, exportExcelAttendance, exportExcelReport, printPage,
