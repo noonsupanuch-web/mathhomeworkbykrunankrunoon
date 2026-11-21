@@ -119,48 +119,134 @@
 
         <!-- Student Profile Modal -->
         <transition name="fade">
-            <div v-if="viewingStudent" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl text-center border-4 relative" :style="{ borderColor: settings.themeColor }">
-                    <button @click="viewingStudent = null" class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-10 h-10 flex items-center justify-center font-bold transition-transform hover:scale-110 shadow-sm">X</button>
+            <div v-if="viewingStudent" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div class="bg-white rounded-[2.5rem] p-6 md:p-8 w-full max-w-3xl shadow-2xl border-4 relative max-h-[90vh] flex flex-col" :style="{ borderColor: settings.themeColor }">
+                    <button @click="viewingStudent = null" class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-10 h-10 flex items-center justify-center font-bold transition-transform hover:scale-110 shadow-sm z-10">X</button>
                     
-                    <div class="w-32 h-32 mx-auto rounded-full border-4 shadow-md overflow-hidden mb-4 relative group bg-white" :style="{ borderColor: settings.themeColor }">
-                        <img v-if="viewingStudent.profileUrl" :src="viewingStudent.profileUrl" class="w-full h-full object-cover">
-                        <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-5xl">👧👦</div>
+                    <div class="overflow-y-auto pr-2 flex-1">
+                        <div class="w-24 h-24 md:w-32 md:h-32 mx-auto rounded-full border-4 shadow-md overflow-hidden mb-4 relative group bg-white shrink-0" :style="{ borderColor: settings.themeColor }">
+                            <img v-if="viewingStudent.profileUrl" :src="viewingStudent.profileUrl" class="w-full h-full object-cover">
+                            <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-4xl md:text-5xl">👧👦</div>
+                            
+                            <!-- Upload overlay (เฉพาะ Admin หรือเจ้าของโปรไฟล์ถึงจะเปลี่ยนรูปได้) -->
+                            <label v-if="user && (user.role === 'admin' || user.id === viewingStudent.id)" class="absolute inset-0 bg-black/50 hidden group-hover:flex flex-col items-center justify-center cursor-pointer text-white font-bold text-sm transition-all">
+                                <span>📷</span>
+                                <span>เปลี่ยนรูป</span>
+                                <input type="file" class="hidden" accept="image/*" @change="uploadProfilePic($event, viewingStudent)">
+                            </label>
+                        </div>
                         
-                        <!-- Upload overlay (เฉพาะ Admin หรือเจ้าของโปรไฟล์ถึงจะเปลี่ยนรูปได้) -->
-                        <label v-if="user && (user.role === 'admin' || user.id === viewingStudent.id)" class="absolute inset-0 bg-black/50 hidden group-hover:flex flex-col items-center justify-center cursor-pointer text-white font-bold text-sm transition-all">
-                            <span>📷</span>
-                            <span>เปลี่ยนรูป</span>
-                            <input type="file" class="hidden" accept="image/*" @change="uploadProfilePic($event, viewingStudent)">
-                        </label>
-                    </div>
-                    
-                    <h3 class="text-3xl font-bold mb-1" :style="{ color: settings.themeColor }">{{ viewingStudent.name }}</h3>
-                    <p class="text-gray-600 font-bold text-lg mb-6">{{ viewingStudent.fullname }}</p>
-                    
-                    <div class="grid grid-cols-2 gap-4 text-left bg-gray-50 p-4 rounded-2xl border-2 shadow-inner" :style="{ borderColor: settings.themeColor + '20' }">
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold">รหัสนักเรียน</p>
-                            <p class="font-bold text-gray-800 text-lg">{{ viewingStudent.code }}</p>
+                        <!-- โหมดดูข้อมูลปกติ (แสดงให้นักเรียนเห็น) -->
+                        <div v-if="!user || user.role !== 'admin'" class="text-center mb-6">
+                            <h3 class="text-2xl md:text-3xl font-bold mb-1" :style="{ color: settings.themeColor }">{{ viewingStudent.name }}</h3>
+                            <p class="text-gray-600 font-bold text-base md:text-lg">{{ viewingStudent.fullname }}</p>
+                            <p class="text-gray-500 font-medium text-sm">ชั้น: {{ viewingStudent.classRoom || '-' }} | เลขที่: {{ viewingStudent.studentNo || '-' }}</p>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold">ห้องเรียน</p>
-                            <p class="font-bold text-gray-800 text-lg">{{ viewingStudent.classRoom || '-' }}</p>
+
+                        <!-- โหมดแก้ไขข้อมูลสำหรับแอดมิน -->
+                        <div v-if="user && user.role === 'admin'" class="mb-6 bg-gray-50 p-4 rounded-2xl border-2 border-gray-100 shadow-inner">
+                            <h4 class="font-bold text-gray-700 mb-3 text-center flex items-center justify-center gap-2"><span>📝</span> แก้ไขข้อมูลนักเรียน</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">รหัส Login</label>
+                                    <input type="text" v-model="viewingStudent.code" class="w-full border-2 rounded-xl p-2 text-sm font-mono focus:outline-none focus:border-blue-400">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">ชื่อเล่น</label>
+                                    <input type="text" v-model="viewingStudent.name" class="w-full border-2 rounded-xl p-2 text-sm font-bold focus:outline-none focus:border-blue-400">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="text-xs font-bold text-gray-500">ชื่อ-สกุล</label>
+                                    <input type="text" v-model="viewingStudent.fullname" class="w-full border-2 rounded-xl p-2 text-sm focus:outline-none focus:border-blue-400">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500">ห้องเรียน</label>
+                                        <input type="text" v-model="viewingStudent.classRoom" class="w-full border-2 rounded-xl p-2 text-sm text-center focus:outline-none focus:border-blue-400">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500">เลขที่</label>
+                                        <input type="text" v-model="viewingStudent.studentNo" class="w-full border-2 rounded-xl p-2 text-sm text-center focus:outline-none focus:border-blue-400">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">รหัสผ่าน (เว้นว่าง = ใช้ส่วนกลาง)</label>
+                                    <input type="text" v-model="viewingStudent.password" placeholder="รหัสผ่านส่วนตัว" class="w-full border-2 rounded-xl p-2 text-sm focus:outline-none focus:border-blue-400">
+                                </div>
+                            </div>
+                            <p class="text-xs text-green-600 mt-3 text-center font-bold">✨ ข้อมูลที่แก้ไขจะถูกบันทึกอัตโนมัติทันที</p>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold mb-1">เวลาเรียนทั้งหมด (มา/ขาด/ลา)</p>
-                            <p class="font-bold text-gray-800 text-lg bg-white inline-block px-3 py-1 rounded-lg shadow-sm">
-                                <span class="text-green-600" title="มาเรียน">{{ getStudentAllTimeStats(viewingStudent.id).present }}</span> / 
-                                <span class="text-red-500" title="ขาดเรียน">{{ getStudentAllTimeStats(viewingStudent.id).absent }}</span> / 
-                                <span class="text-yellow-500" title="ลา">{{ getStudentAllTimeStats(viewingStudent.id).leave }}</span>
-                            </p>
+                        
+                        <!-- สถิติการเรียน/การบ้าน -->
+                        <div class="grid grid-cols-2 gap-4 text-left bg-blue-50 p-4 rounded-2xl border-2 mb-6 shadow-inner" :style="{ borderColor: settings.themeColor + '20' }">
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold mb-1">เวลาเรียน (มา/กิจกรรม/ขาด/ลา)</p>
+                                <p class="font-bold text-gray-800 text-sm md:text-lg bg-white inline-block px-3 py-1 rounded-lg shadow-sm border border-gray-100">
+                                    <span class="text-green-600" title="มาเรียน">{{ getStudentAllTimeStats(viewingStudent.id).present }}</span> / 
+                                    <span class="text-purple-600" title="กิจกรรม">{{ getStudentAllTimeStats(viewingStudent.id).activity }}</span> / 
+                                    <span class="text-red-500" title="ขาดเรียน">{{ getStudentAllTimeStats(viewingStudent.id).absent }}</span> / 
+                                    <span class="text-yellow-500" title="ลา">{{ getStudentAllTimeStats(viewingStudent.id).leave }}</span>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 font-bold mb-1">การบ้าน (เสร็จ/สั่งทั้งหมด)</p>
+                                <p class="font-bold text-blue-600 text-sm md:text-lg bg-white inline-block px-3 py-1 rounded-lg shadow-sm border border-gray-100">
+                                    ✅ {{ tasks.filter(t => t.studentId === viewingStudent.id && t.isCompleted).length }} / 
+                                    📚 {{ tasks.filter(t => t.studentId === viewingStudent.id).length }}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold mb-1">การบ้าน (เสร็จ/สั่งทั้งหมด)</p>
-                            <p class="font-bold text-blue-600 text-lg bg-white inline-block px-3 py-1 rounded-lg shadow-sm">
-                                ✅ {{ tasks.filter(t => t.studentId === viewingStudent.id && t.isCompleted).length }} / 
-                                📚 {{ tasks.filter(t => t.studentId === viewingStudent.id).length }}
-                            </p>
+
+                        <!-- ประวัติการส่งการบ้าน (เห็นเฉพาะแอดมินหรือเจ้าตัว) -->
+                        <div v-if="user && (user.role === 'admin' || user.id === viewingStudent.id)">
+                            <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2 text-lg border-b-2 pb-2" :style="{ borderColor: settings.themeColor + '20' }">
+                                <span>📚</span> ประวัติการจดการบ้านทั้งหมด
+                            </h4>
+                            
+                            <div v-if="tasks.filter(t => t.studentId === viewingStudent.id).length === 0" class="text-center p-6 bg-gray-50 rounded-2xl text-gray-400 font-bold border-2 border-dashed">
+                                ยังไม่มีประวัติการจดการบ้านเลยจ้า ✌️
+                            </div>
+                            
+                            <div v-else class="space-y-3">
+                                <div v-for="task in tasks.filter(t => t.studentId === viewingStudent.id).sort((a,b) => new Date(b.date) - new Date(a.date))" :key="task.id" 
+                                     class="p-4 rounded-2xl border-2 bg-white flex flex-col md:flex-row gap-4 justify-between items-start md:items-center shadow-sm transition-colors hover:bg-gray-50" 
+                                     :style="{ borderColor: task.isCompleted ? '#10b98140' : '#f59e0b40' }">
+                                    
+                                    <div class="flex-1">
+                                        <div class="flex flex-wrap gap-2 text-xs font-bold mb-2">
+                                            <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded border">สั่ง: {{ task.date }}</span>
+                                            <span v-if="task.dueDate" class="bg-red-50 text-red-600 px-2 py-1 rounded border border-red-100">กำหนดส่ง: {{ task.dueDate }}</span>
+                                        </div>
+                                        <p class="font-bold text-base text-gray-800">{{ task.subject }}</p>
+                                        <p class="text-sm text-gray-600 mt-1">{{ task.detail }}</p>
+                                        
+                                        <div v-if="task.imageUrl" class="mt-3">
+                                            <a :href="task.imageUrl" target="_blank" class="inline-block" title="คลิกเพื่อดูรูปขนาดเต็ม">
+                                                <img :src="task.imageUrl" class="h-20 w-auto rounded-lg border-2 hover:scale-105 transition-transform shadow-sm" alt="รูปแนบ">
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                        <!-- แอดมินและเจ้าตัวกดเปลี่ยนสถานะได้ -->
+                                        <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="toggleTaskStatus(task.id)" 
+                                                class="flex-1 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm transition-transform hover:scale-105" 
+                                                :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
+                                            {{ task.isCompleted ? '✅ ทำเสร็จแล้ว' : '⏳ รอส่งงาน' }}
+                                        </button>
+                                        <span v-else class="flex-1 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm text-center" 
+                                              :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
+                                            {{ task.isCompleted ? '✅ ทำเสร็จแล้ว' : '⏳ รอส่งงาน' }}
+                                        </span>
+                                        
+                                        <!-- แอดมินสามารถลบงานขยะทิ้งได้ -->
+                                        <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="deleteTask(task.id)" 
+                                                class="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 border border-red-200 transition-colors text-center">
+                                            🗑️ ลบงาน
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -176,27 +262,27 @@
         </div>
 
         <!-- กล่องหลักของแอป -->
-        <div class="w-full max-w-5xl glass-panel rounded-[3rem] cute-shadow overflow-hidden border-[6px] relative z-30 flex flex-col min-h-[600px] transition-colors duration-500" :style="{ borderColor: settings.themeColor + '60' }">
+        <div class="w-full max-w-5xl glass-panel rounded-[2rem] md:rounded-[3rem] cute-shadow overflow-hidden border-[4px] md:border-[6px] relative z-30 flex flex-col min-h-[85vh] md:min-h-[600px] transition-colors duration-500" :style="{ borderColor: settings.themeColor + '60' }">
             
             <!-- Header -->
-            <div class="p-6 md:p-8 text-center text-white relative shadow-sm" :style="{ background: `linear-gradient(135deg, ${settings.themeColor}, ${settings.themeColor}dd)` }">
-                <h1 class="text-3xl md:text-5xl font-extrabold flex items-center justify-center flex-wrap gap-3 drop-shadow-[0_4px_4px_rgba(0,0,0,0.15)] tracking-wide">
+            <div class="p-4 sm:p-6 md:p-8 text-center text-white relative shadow-sm" :style="{ background: `linear-gradient(135deg, ${settings.themeColor}, ${settings.themeColor}dd)` }">
+                <h1 class="text-2xl sm:text-3xl md:text-5xl font-extrabold flex items-center justify-center flex-wrap gap-2 md:gap-3 drop-shadow-[0_4px_4px_rgba(0,0,0,0.15)] tracking-wide pr-10 md:pr-0">
                     🌸 {{ settings.clubName || 'ชุมนุมการบ้านคณิตติดเพื่อน' }} 📚
                 </h1>
-                <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <span v-if="isOnlineSyncing" class="bg-green-400 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse shadow-sm hidden md:inline-block">
+                <div class="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2">
+                    <span v-if="isOnlineSyncing" class="bg-green-400 text-white px-2 py-1 md:px-3 rounded-full text-[10px] md:text-xs font-bold animate-pulse shadow-sm hidden md:inline-block">
                         ☁️ ออนไลน์
                     </span>
-                    <button v-if="user && user.isAdminMasquerading" @click="user = { role: 'admin' }" class="bg-yellow-400 text-yellow-900 hover:bg-yellow-500 px-4 py-2 rounded-2xl font-bold text-sm shadow-md transition-transform hover:scale-105" title="กลับหน้าแอดมิน">
+                    <button v-if="user && user.isAdminMasquerading" @click="user = { role: 'admin' }" class="bg-yellow-400 text-yellow-900 hover:bg-yellow-500 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl font-bold text-xs md:text-sm shadow-md transition-transform hover:scale-105" title="กลับหน้าแอดมิน">
                         👑 กลับ
                     </button>
-                    <button v-if="user" @click="logout" class="bg-white/20 hover:bg-white/40 p-3 rounded-full transition-colors flex items-center justify-center" title="ออกจากระบบ">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <button v-if="user" @click="logout" class="bg-white/20 hover:bg-white/40 p-2 md:p-3 rounded-full transition-colors flex items-center justify-center" title="ออกจากระบบ">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                     </button>
                 </div>
             </div>
 
-            <div class="p-4 md:p-8 flex-1 flex flex-col">
+            <div class="p-3 sm:p-4 md:p-8 flex-1 flex flex-col">
                 
                 <!-- Loading State -->
                 <div v-if="isLoading" class="flex-1 flex flex-col items-center justify-center space-y-4">
@@ -206,74 +292,74 @@
 
                 <!-- 1. LOGIN SCREEN -->
                 <transition name="slide-up">
-                    <div v-if="!user && !isLoading" class="flex flex-col items-center justify-center flex-1 w-full relative mt-12 md:mt-20">
+                    <div v-if="!user && !isLoading" class="flex flex-col items-center justify-center flex-1 w-full relative mt-8 md:mt-20 mb-8 md:mb-0">
                         
-                        <div class="w-full flex justify-center mb-[-45px] md:mb-[-60px] relative z-20 cute-float">
-                            <img v-if="settings.loginBanner" :src="settings.loginBanner" alt="Login Banner" class="h-28 md:h-36 object-contain drop-shadow-xl hover:scale-105 transition-transform" />
-                            <div v-else class="w-[90%] max-w-[400px] py-5 px-6 md:py-6 md:px-8 rounded-[2rem] border-4 md:border-[6px] border-white shadow-xl flex items-center justify-center gap-2 md:gap-4 overflow-hidden" :style="{ backgroundColor: settings.themeColor }">
-                                <span class="text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐰</span>
-                                <span class="text-2xl md:text-3xl text-white font-black drop-shadow-sm text-center tracking-wide">ต้อนรับ!</span>
-                                <span class="text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐻</span>
+                        <div class="w-full flex justify-center mb-[-35px] sm:mb-[-45px] md:mb-[-60px] relative z-20 cute-float">
+                            <img v-if="settings.loginBanner" :src="settings.loginBanner" alt="Login Banner" class="h-20 sm:h-28 md:h-36 object-contain drop-shadow-xl hover:scale-105 transition-transform" />
+                            <div v-else class="w-[85%] max-w-[400px] py-4 px-5 md:py-6 md:px-8 rounded-[1.5rem] md:rounded-[2rem] border-4 md:border-[6px] border-white shadow-xl flex items-center justify-center gap-2 md:gap-4 overflow-hidden" :style="{ backgroundColor: settings.themeColor }">
+                                <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐰</span>
+                                <span class="text-xl sm:text-2xl md:text-3xl text-white font-black drop-shadow-sm text-center tracking-wide">ต้อนรับ!</span>
+                                <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐻</span>
                             </div>
                         </div>
 
-                        <div class="bg-white p-8 md:p-12 pt-20 md:pt-28 rounded-[2.5rem] shadow-2xl w-full max-w-lg border-[6px] relative z-10" :style="{ borderColor: settings.themeColor }">
+                        <div class="bg-white p-6 sm:p-8 md:p-12 pt-16 sm:pt-20 md:pt-28 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl w-full max-w-lg border-4 md:border-[6px] relative z-10" :style="{ borderColor: settings.themeColor }">
                             
-                            <div class="relative w-full max-w-sm mx-auto mb-8 rounded-full p-2 flex justify-between shadow-inner bg-gray-100/80 border-2 border-transparent">
+                            <div class="relative w-full max-w-sm mx-auto mb-6 md:mb-8 rounded-full p-1.5 md:p-2 flex justify-between shadow-inner bg-gray-100/80 border-2 border-transparent">
                                 <button @click="loginMode = 'student'" 
-                                        class="flex-1 py-3 rounded-full font-black text-lg transition-all duration-300 z-10 flex items-center justify-center gap-2" 
+                                        class="flex-1 py-2 md:py-3 rounded-full font-black text-sm sm:text-base md:text-lg transition-all duration-300 z-10 flex items-center justify-center gap-1 md:gap-2" 
                                         :class="loginMode === 'student' ? 'text-white shadow-md scale-105' : 'text-gray-500 hover:text-gray-700'" 
                                         :style="loginMode === 'student' ? { backgroundColor: settings.themeColor } : {}">
-                                    <img v-if="settings.iconStudent" :src="settings.iconStudent" class="w-7 h-7 object-contain drop-shadow-sm" />
+                                    <img v-if="settings.iconStudent" :src="settings.iconStudent" class="w-6 h-6 md:w-7 md:h-7 object-contain drop-shadow-sm" />
                                     <span v-else>👧👦</span> นักเรียน
                                 </button>
                                 <button @click="loginMode = 'admin'" 
-                                        class="flex-1 py-3 rounded-full font-black text-lg transition-all duration-300 z-10 flex items-center justify-center gap-2" 
+                                        class="flex-1 py-2 md:py-3 rounded-full font-black text-sm sm:text-base md:text-lg transition-all duration-300 z-10 flex items-center justify-center gap-1 md:gap-2" 
                                         :class="loginMode === 'admin' ? 'text-white shadow-md scale-105' : 'text-gray-500 hover:text-gray-700'" 
                                         :style="loginMode === 'admin' ? { backgroundColor: settings.themeColor } : {}">
-                                    <img v-if="settings.iconTeacher" :src="settings.iconTeacher" class="w-7 h-7 object-contain drop-shadow-sm" />
+                                    <img v-if="settings.iconTeacher" :src="settings.iconTeacher" class="w-6 h-6 md:w-7 md:h-7 object-contain drop-shadow-sm" />
                                     <span v-else>👩‍🏫</span> คุณครู
                                 </button>
                             </div>
 
-                            <div class="text-center mb-8">
-                                <h2 class="text-3xl font-extrabold text-slate-800 mb-2">ยินดีต้อนรับจ้า!</h2>
-                                <p class="text-slate-500 font-bold text-lg">กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบด้านล่าง 👇</p>
+                            <div class="text-center mb-6 md:mb-8">
+                                <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-1 md:mb-2">ยินดีต้อนรับจ้า!</h2>
+                                <p class="text-slate-500 font-bold text-sm md:text-lg">กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบด้านล่าง 👇</p>
                             </div>
 
-                            <form @submit.prevent="login" class="space-y-6">
-                                <div v-if="loginMode === 'student'" class="text-left space-y-5">
+                            <form @submit.prevent="login" class="space-y-4 md:space-y-6">
+                                <div v-if="loginMode === 'student'" class="text-left space-y-4 md:space-y-5">
                                     <div>
-                                        <label class="block text-sm font-extrabold mb-2 text-slate-700 ml-2">รหัสนักเรียน (สำหรับเข้าสู่ระบบ)</label>
+                                        <label class="block text-xs md:text-sm font-extrabold mb-1 md:mb-2 text-slate-700 ml-2">รหัสนักเรียน (สำหรับเข้าสู่ระบบ)</label>
                                         <input type="text" v-model="loginName" placeholder="ใส่รหัสนักเรียน..." required
-                                            class="w-full px-5 py-4 rounded-[1.5rem] cute-input focus:outline-none bg-gray-50 focus:bg-white text-lg font-bold text-slate-800 placeholder-slate-400"
+                                            class="w-full px-4 md:px-5 py-3 md:py-4 rounded-[1.2rem] md:rounded-[1.5rem] cute-input focus:outline-none bg-gray-50 focus:bg-white text-base md:text-lg font-bold text-slate-800 placeholder-slate-400"
                                             :style="{ borderColor: settings.themeColor + '60' }" />
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-extrabold mb-2 text-slate-700 ml-2">รหัสผ่าน (สอบถามคุณครู)</label>
+                                        <label class="block text-xs md:text-sm font-extrabold mb-1 md:mb-2 text-slate-700 ml-2">รหัสผ่าน (สอบถามคุณครู)</label>
                                         <div class="relative">
-                                            <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-xl">🔑</span>
+                                            <span class="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 text-lg md:text-xl">🔑</span>
                                             <input type="password" v-model="loginCode" placeholder="ใส่รหัสผ่าน..." required
-                                                class="w-full pl-14 pr-5 py-4 rounded-[1.5rem] cute-input focus:outline-none bg-gray-50 focus:bg-white text-lg font-bold text-slate-800 placeholder-slate-400"
+                                                class="w-full pl-12 md:pl-14 pr-4 md:pr-5 py-3 md:py-4 rounded-[1.2rem] md:rounded-[1.5rem] cute-input focus:outline-none bg-gray-50 focus:bg-white text-base md:text-lg font-bold text-slate-800 placeholder-slate-400"
                                                 :style="{ borderColor: settings.themeColor + '60' }" />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div v-if="loginMode === 'admin'" class="text-left space-y-5">
+                                <div v-if="loginMode === 'admin'" class="text-left space-y-4 md:space-y-5">
                                     <div>
-                                        <label class="block text-sm font-extrabold mb-2 text-slate-700 ml-2">กรอกรหัสผ่านคุณครู</label>
+                                        <label class="block text-xs md:text-sm font-extrabold mb-1 md:mb-2 text-slate-700 ml-2">กรอกรหัสผ่านคุณครู</label>
                                         <div class="relative">
-                                            <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-xl">🔑</span>
+                                            <span class="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-400 text-lg md:text-xl">🔑</span>
                                             <input type="password" v-model="loginCode" placeholder="ใส่รหัสผ่านคุณครู..." required
-                                                class="w-full pl-14 pr-5 py-4 rounded-[1.5rem] cute-input focus:outline-none bg-gray-50 focus:bg-white text-lg font-bold text-slate-800 placeholder-slate-400"
+                                                class="w-full pl-12 md:pl-14 pr-4 md:pr-5 py-3 md:py-4 rounded-[1.2rem] md:rounded-[1.5rem] cute-input focus:outline-none bg-gray-50 focus:bg-white text-base md:text-lg font-bold text-slate-800 placeholder-slate-400"
                                                 :style="{ borderColor: settings.themeColor + '60' }" />
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <button type="submit" 
-                                    class="w-full text-white font-black text-xl py-4 rounded-[1.5rem] cute-btn hover:scale-105 flex justify-center items-center gap-2 mt-8 border-b-4 active:border-b-0 active:translate-y-1 transition-all"
+                                    class="w-full text-white font-black text-lg md:text-xl py-3 md:py-4 rounded-[1.2rem] md:rounded-[1.5rem] cute-btn hover:scale-105 flex justify-center items-center gap-2 mt-6 md:mt-8 border-b-4 active:border-b-0 active:translate-y-1 transition-all"
                                     :style="{ 
                                         background: `linear-gradient(135deg, ${settings.themeColor}, ${settings.themeColor}dd)`,
                                         borderColor: settings.themeColor + '99',
@@ -426,7 +512,7 @@
                                                 <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).absent }}</td>
                                                 <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).leave }}</td>
                                                 <td class="border border-gray-300 p-2">0</td>
-                                                <td class="border border-gray-300 p-2">0</td>
+                                                <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).activity }}</td>
                                                 <td class="border border-gray-300 p-2">0</td>
                                                 <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).total }}</td>
                                                 <td class="border border-gray-300 p-2">{{ getAttendanceStats(std.id).percent }}%</td>
@@ -1136,6 +1222,7 @@
                     const record = attendance.value.find(a => a.studentId === stdId && a.date === attendanceDate.value);
                     if (!record) return { label: 'ยังไม่เช็ค', color: '#9ca3af', status: 'none' };
                     if (record.status === 'present') return { label: 'มาเรียน', color: '#10b981', status: 'present' };
+                    if (record.status === 'activity') return { label: 'กิจกรรม', color: '#8b5cf6', status: 'activity' };
                     if (record.status === 'absent') return { label: 'ขาดเรียน', color: '#ef4444', status: 'absent' };
                     if (record.status === 'leave') return { label: 'ลา', color: '#f59e0b', status: 'leave' };
                     return { label: 'ยังไม่เช็ค', color: '#9ca3af', status: 'none' };
@@ -1144,7 +1231,7 @@
                 const toggleAttendance = (stdId) => {
                     hasPendingChanges = true; // ล็อคระบบ Sync อัตโนมัติทันทีที่กด!
                     const idx = attendance.value.findIndex(a => a.studentId === stdId && a.date === attendanceDate.value);
-                    const order = ['none', 'present', 'leave', 'absent'];
+                    const order = ['none', 'present', 'activity', 'leave', 'absent'];
                     let currentStatus = 'none';
                     if (idx > -1) currentStatus = attendance.value[idx].status;
                     
@@ -1197,19 +1284,21 @@
                     } 
 
                     const present = records.filter(a => a.status === 'present').length;
+                    const activity = records.filter(a => a.status === 'activity').length;
                     const absent = records.filter(a => a.status === 'absent').length;
                     const leave = records.filter(a => a.status === 'leave').length;
-                    const total = present + absent + leave;
-                    const percent = total === 0 ? 0 : Math.round((present / total) * 100);
-                    return { present, absent, leave, total, percent, pass: percent >= 80 };
+                    const total = present + activity + absent + leave;
+                    const percent = total === 0 ? 0 : Math.round(((present + activity) / total) * 100);
+                    return { present, activity, absent, leave, total, percent, pass: percent >= 80 };
                 };
 
                 const getStudentAllTimeStats = (stdId) => {
                     const records = attendance.value.filter(a => a.studentId === stdId);
                     const present = records.filter(a => a.status === 'present').length;
+                    const activity = records.filter(a => a.status === 'activity').length;
                     const absent = records.filter(a => a.status === 'absent').length;
                     const leave = records.filter(a => a.status === 'leave').length;
-                    return { present, absent, leave };
+                    return { present, activity, absent, leave };
                 };
 
                 // Methods - Admin Reports
