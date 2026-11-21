@@ -227,9 +227,9 @@
                                         <p class="font-bold text-base text-gray-800">{{ task.subject }}</p>
                                         <p class="text-sm text-gray-600 mt-1">{{ task.detail }}</p>
                                         
-                                        <div v-if="task.imageUrl" class="mt-3">
-                                            <a :href="task.imageUrl" target="_blank" class="inline-block" title="คลิกเพื่อดูรูปขนาดเต็ม">
-                                                <img :src="task.imageUrl" class="h-20 w-auto rounded-lg border-2 hover:scale-105 transition-transform shadow-sm" alt="รูปแนบ">
+                                        <div v-if="task.imageUrl || localImageMap[task.id]" class="mt-3">
+                                            <a :href="localImageMap[task.id] || task.imageUrl" target="_blank" class="inline-block" title="คลิกเพื่อดูรูปขนาดเต็ม">
+                                                <img :src="localImageMap[task.id] || task.imageUrl" class="h-20 w-auto rounded-lg border-2 hover:scale-105 transition-transform shadow-sm" alt="รูปแนบ">
                                             </a>
                                         </div>
                                     </div>
@@ -449,9 +449,9 @@
                                 <div v-if="attMode === 'daily'" class="space-y-4">
                                     <div class="flex justify-between items-center mb-4">
                                         <h3 class="font-bold text-xl" :style="{ color: settings.themeColor }">เช็คชื่อประจำวัน</h3>
-                                        <input type="date" v-model="attendanceDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
+                                        <input type="date" v-model="attendanceDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none bg-blue-50" :style="{ borderColor: settings.themeColor }"/>
                                     </div>
-                                    <p class="text-xs text-gray-500 mb-2 font-bold">💡 ทริค: หากต้องการดูหรือแก้ไขการเช็คชื่อย้อนหลัง ให้เปลี่ยนวันที่ในช่องด้านบนได้เลยจ้า</p>
+                                    <p class="text-xs text-gray-500 mb-2 font-bold bg-yellow-50 p-2 rounded border border-yellow-200">💡 ทริค: กำลังจัดการข้อมูลของวันที่ <span class="text-blue-600 text-sm">{{ attendanceDate }}</span> (เปลี่ยนวันที่ในช่องด้านบนเพื่อเช็คชื่อ/แก้ไขย้อนหลังได้เลย!)</p>
                                     
                                     <!-- เพิ่มปุ่ม มาเรียนทั้งหมด และ บันทึก -->
                                     <div v-if="filteredStudentsForReport.length > 0" class="flex justify-end gap-2 mb-4 bg-gray-50 p-3 rounded-xl border" :style="{ borderColor: settings.themeColor + '20' }">
@@ -550,6 +550,81 @@
                                         <span class="text-red-500">❌ = ขาดเรียน</span>
                                         <span class="text-yellow-500">🟡 = ลา</span>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2.2 TAB: Reports -->
+                        <div v-if="currentAdminTab === 'reports'" class="space-y-4 fade-enter-active">
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4 shadow-sm">
+                                <div class="flex flex-wrap gap-4 items-center">
+                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                        <input type="radio" v-model="reportMode" value="daily" class="text-blue-500"> ดูรายวัน
+                                        <input type="date" v-model="reportDate" v-if="reportMode === 'daily'" class="border rounded p-1 ml-2 text-xs">
+                                    </label>
+                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                        <input type="radio" v-model="reportMode" value="all" class="text-blue-500"> ทั้งหมด
+                                    </label>
+                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                        <input type="radio" v-model="reportMode" value="monthly" class="text-blue-500"> รายเดือน
+                                        <input type="month" v-model="reportMonth" v-if="reportMode === 'monthly'" class="border rounded p-1 ml-2 text-xs">
+                                    </label>
+                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                        <input type="radio" v-model="reportMode" value="range" class="text-blue-500"> ช่วงวันที่
+                                        <div v-if="reportMode === 'range'" class="flex items-center gap-1 ml-2">
+                                            <input type="date" v-model="reportStartDate" class="border rounded p-1 text-xs"> ถึง
+                                            <input type="date" v-model="reportEndDate" class="border rounded p-1 text-xs">
+                                        </div>
+                                    </label>
+                                    
+                                    <div class="ml-auto flex gap-2">
+                                        <button @click="exportExcelReport" class="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-bold shadow hover:bg-green-700 flex items-center gap-1">📤 ส่งออก Excel</button>
+                                        <button @click="printPage('report-content')" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm font-bold shadow hover:bg-gray-300">🖨️ พิมพ์</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="report-content" class="bg-white p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
+                                <h3 class="font-bold text-xl mb-4 text-gray-800">
+                                    รายงานการบ้าน 
+                                    <span v-if="reportMode === 'daily'">ประจำวันที่ {{ reportDate }}</span>
+                                    <span v-if="reportMode === 'monthly'">ประจำเดือน {{ reportMonth }}</span>
+                                </h3>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse border border-gray-300 text-sm min-w-[800px]">
+                                        <thead>
+                                            <tr class="bg-blue-600 text-white font-bold">
+                                                <th class="border border-blue-700 p-2 w-24">วันที่สั่ง</th>
+                                                <th class="border border-blue-700 p-2 w-20">รหัส</th>
+                                                <th class="border border-blue-700 p-2">ชื่อ-สกุล</th>
+                                                <th class="border border-blue-700 p-2 w-20">ชั้น</th>
+                                                <th class="border border-blue-700 p-2">วิชา</th>
+                                                <th class="border border-blue-700 p-2">รายละเอียดงาน</th>
+                                                <th class="border border-blue-700 p-2 text-center w-24">สถานะ</th>
+                                                <th class="border border-blue-700 p-2 text-center w-20">รูปแนบ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="t in flatReportTasks" :key="t.id" class="hover:bg-blue-50 text-gray-700">
+                                                <td class="border border-gray-300 p-2">{{ t.date }}</td>
+                                                <td class="border border-gray-300 p-2 font-mono">{{ t.studentCode }}</td>
+                                                <td class="border border-gray-300 p-2">{{ t.studentName }}</td>
+                                                <td class="border border-gray-300 p-2 text-center">{{ t.studentClass }}</td>
+                                                <td class="border border-gray-300 p-2 font-bold">{{ t.subject }}</td>
+                                                <td class="border border-gray-300 p-2">{{ t.detail }}</td>
+                                                <td class="border border-gray-300 p-2 text-center font-bold" :class="t.isCompleted ? 'text-green-600' : 'text-orange-500'">
+                                                    {{ t.isCompleted ? '✅ เสร็จ' : '⏳ รอส่ง' }}
+                                                </td>
+                                                <td class="border border-gray-300 p-2 text-center">
+                                                    <a v-if="t.imageUrl || localImageMap[t.id]" :href="localImageMap[t.id] || t.imageUrl" target="_blank" class="text-blue-500 underline hover:text-blue-700 font-bold">ดูรูป</a>
+                                                    <span v-else class="text-gray-300">-</span>
+                                                </td>
+                                            </tr>
+                                            <tr v-if="flatReportTasks.length === 0">
+                                                <td colspan="8" class="border border-gray-300 p-6 text-gray-400 text-center font-bold">ไม่พบข้อมูลการบ้านในเงื่อนไขที่เลือกจ้า</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -834,9 +909,9 @@
                                             <span class="font-bold text-gray-800">{{ task.subject }}</span>
                                         </div>
                                         <p class="text-gray-600">{{ task.detail }}</p>
-                                        <div v-if="task.imageUrl" class="mt-3">
-                                            <a :href="task.imageUrl" target="_blank" class="inline-block" title="คลิกเพื่อดูรูปขนาดเต็ม">
-                                                <img :src="task.imageUrl" class="w-32 h-32 md:w-48 md:h-48 object-cover rounded-2xl border-2 hover:scale-105 transition-transform shadow-md" :style="{ borderColor: settings.themeColor + '40' }" alt="รูปการบ้าน">
+                                        <div v-if="task.imageUrl || localImageMap[task.id]" class="mt-3">
+                                            <a :href="localImageMap[task.id] || task.imageUrl" target="_blank" class="inline-block" title="คลิกเพื่อดูรูปขนาดเต็ม">
+                                                <img :src="localImageMap[task.id] || task.imageUrl" class="w-32 h-32 md:w-48 md:h-48 object-cover rounded-2xl border-2 hover:scale-105 transition-transform shadow-md" :style="{ borderColor: settings.themeColor + '40' }" alt="รูปการบ้าน">
                                             </a>
                                         </div>
                                     </div>
@@ -929,6 +1004,8 @@
                 const newStudent = ref({ code: '', name: '', fullname: '', classRoom: '', password: '', profileUrl: '' });
                 const studentSearch = ref('');
                 const viewingStudent = ref(null);
+                
+                const localImageMap = ref({}); // เก็บ URL รูปจำลองไว้โชว์ชั่วคราวขณะรอลิงก์จริงโหลดเสร็จจาก Google Drive
 
                 const showOnlineImport = ref(false);
                 const onlineSheetUrl = ref('https://docs.google.com/spreadsheets/d/12pP6vamAWtupqQ_fd91kF9wwdNzqciMqZS1MhxnQSPg/edit?gid=0#gid=0');
@@ -1136,6 +1213,27 @@
                         s.code.toLowerCase().includes(term) || 
                         (s.classRoom && s.classRoom.toLowerCase().includes(term))
                     );
+                });
+
+                const flatReportTasks = computed(() => {
+                    let allTasks = tasks.value;
+                    if (reportMode.value === 'daily') {
+                        allTasks = allTasks.filter(t => t.date === reportDate.value);
+                    } else if (reportMode.value === 'monthly') {
+                        allTasks = allTasks.filter(t => t.date.startsWith(reportMonth.value));
+                    } else if (reportMode.value === 'range') {
+                        allTasks = allTasks.filter(t => t.date >= reportStartDate.value && t.date <= reportEndDate.value);
+                    }
+                    
+                    return allTasks.map(t => {
+                        const std = students.value.find(s => s.id === t.studentId) || {};
+                        return {
+                            ...t,
+                            studentCode: std.code || '-',
+                            studentName: std.fullname || std.name || '-',
+                            studentClass: std.classRoom || '-'
+                        };
+                    }).sort((a,b) => new Date(b.date) - new Date(a.date));
                 });
 
                 const isAllStudentsSelected = computed(() => {
@@ -1601,7 +1699,10 @@
                         }
 
                         let uploadedUrl = '';
+                        let tempLocalPreview = ''; // เพิ่มตัวแปรจำลองสำหรับรูปภาพ
+
                         if (pendingFile.value) {
+                            tempLocalPreview = pendingImageUrl.value; // เก็บรูปจำลองไว้โชว์ทันที
                             isUploading.value = true;
                             try {
                                 uploadedUrl = await uploadImageToDrive(pendingFile.value);
@@ -1620,8 +1721,13 @@
 
                         if (!tasks.value) tasks.value = [];
 
+                        const newTaskId = Date.now().toString();
+                        if (tempLocalPreview) {
+                            localImageMap.value[newTaskId] = tempLocalPreview;
+                        }
+
                         tasks.value.push({ 
-                            id: Date.now().toString(), 
+                            id: newTaskId, 
                             studentId: user.value.id, 
                             date: newTask.value.date || new Date().toISOString().split('T')[0],
                             dueDate: newTask.value.dueDate || '',
@@ -1765,7 +1871,7 @@
                     adminTabs, currentAdminTab,
                     attFilterClass, attFilterSemester, attFilterYear, attMode, attendanceDate, attMonth, attStartDate, attEndDate,
                     reportMode, reportDate, reportMonth, reportStartDate, reportEndDate,
-                    uniqueClasses, filteredStudentsForReport, myTasks,
+                    uniqueClasses, filteredStudentsForReport, myTasks, flatReportTasks, localImageMap,
                     newTask, newStudent, modal, showModal, closeModal,
                     pendingFile, pendingImageUrl, onFileChange, removePendingFile, isUploading,
                     studentSearch, viewingStudent, filteredStudentsForManagement, uploadProfilePic, removeProfilePic,
