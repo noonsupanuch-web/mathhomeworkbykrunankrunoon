@@ -454,7 +454,10 @@
                                     <p class="text-xs text-gray-500 mb-2 font-bold bg-yellow-50 p-2 rounded border border-yellow-200">💡 ทริค: กำลังจัดการข้อมูลของวันที่ <span class="text-blue-600 text-sm">{{ attendanceDate }}</span> (เปลี่ยนวันที่ในช่องด้านบนเพื่อเช็คชื่อ/แก้ไขย้อนหลังได้เลย!)</p>
                                     
                                     <!-- เพิ่มปุ่ม มาเรียนทั้งหมด และ บันทึก -->
-                                    <div v-if="filteredStudentsForReport.length > 0" class="flex justify-end gap-2 mb-4 bg-gray-50 p-3 rounded-xl border" :style="{ borderColor: settings.themeColor + '20' }">
+                                    <div v-if="filteredStudentsForReport.length > 0" class="flex flex-wrap justify-end gap-2 mb-4 bg-gray-50 p-3 rounded-xl border" :style="{ borderColor: settings.themeColor + '20' }">
+                                        <button @click="clearDailyAttendance" class="px-4 py-2 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm font-bold shadow-sm hover:bg-red-100 transition-colors flex items-center gap-1 hover:scale-105">
+                                            🗑️ ล้างข้อมูลวันนี้
+                                        </button>
                                         <button @click="markAllPresent" class="px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow-md hover:bg-green-600 transition-colors flex items-center gap-1 hover:scale-105">
                                             ✅ มาเรียนทุกคน
                                         </button>
@@ -1330,6 +1333,16 @@
                     });
                 };
 
+                const clearDailyAttendance = () => {
+                    showModal('ยืนยันล้างข้อมูล', `ต้องการล้างข้อมูลการเช็คชื่อของวันที่ ${attendanceDate.value} ทั้งหมดใช่หรือไม่?`, 'confirm', async () => {
+                        attendance.value = attendance.value.filter(a => a.date !== attendanceDate.value);
+                        hasPendingChanges = true;
+                        closeModal();
+                        await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
+                        showModal('สำเร็จ', `ล้างข้อมูลการเช็คชื่อของวันที่ ${attendanceDate.value} เรียบร้อยแล้วจ้า 🗑️`);
+                    });
+                };
+
                 const saveAttendance = async () => {
                     isUploading.value = true;
                     try {
@@ -1877,7 +1890,7 @@
                     studentSearch, viewingStudent, filteredStudentsForManagement, uploadProfilePic, removeProfilePic,
                     selectedStudents, isAllStudentsSelected, toggleSelectAllStudents, deleteSelectedStudents,
                     showOnlineImport, onlineSheetUrl, importFromOnlineSheet, importStudentsFile, exportStudentsExcel,
-                    getAttendanceStatusDisplay, toggleAttendance, markAllPresent, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
+                    getAttendanceStatusDisplay, toggleAttendance, markAllPresent, clearDailyAttendance, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
                     dynamicAttendanceDates, getAttendanceMark,
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
