@@ -358,6 +358,17 @@
                                         <h3 class="font-bold text-xl" :style="{ color: settings.themeColor }">เช็คชื่อประจำวัน</h3>
                                         <input type="date" v-model="attendanceDate" class="border-2 rounded-xl p-2 font-medium focus:outline-none" :style="{ borderColor: settings.themeColor }"/>
                                     </div>
+                                    
+                                    <!-- เพิ่มปุ่ม มาเรียนทั้งหมด และ บันทึก -->
+                                    <div v-if="filteredStudentsForReport.length > 0" class="flex justify-end gap-2 mb-4 bg-gray-50 p-3 rounded-xl border" :style="{ borderColor: settings.themeColor + '20' }">
+                                        <button @click="markAllPresent" class="px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow-md hover:bg-green-600 transition-colors flex items-center gap-1 hover:scale-105">
+                                            ✅ มาเรียนทุกคน
+                                        </button>
+                                        <button @click="saveAttendance" class="px-6 py-2 text-white rounded-xl text-sm font-bold shadow-md transition-transform hover:scale-105" :style="{ backgroundColor: settings.themeColor }">
+                                            💾 บันทึกการเช็คชื่อ
+                                        </button>
+                                    </div>
+
                                     <div v-if="filteredStudentsForReport.length === 0" class="text-center py-10 text-gray-400 font-medium">ไม่พบรายชื่อนักเรียนจ้า</div>
                                     <div v-for="std in filteredStudentsForReport" :key="std.id" class="flex items-center justify-between p-4 rounded-2xl border-2 transition-colors bg-white shadow-sm hover:bg-gray-50" :style="{ borderColor: settings.themeColor + '40' }">
                                         <div class="flex items-center gap-4">
@@ -1151,6 +1162,30 @@
                     }
                 };
 
+                const markAllPresent = () => {
+                    hasPendingChanges = true; // ล็อคระบบ
+                    filteredStudentsForReport.value.forEach(std => {
+                        const idx = attendance.value.findIndex(a => a.studentId === std.id && a.date === attendanceDate.value);
+                        if (idx > -1) {
+                            attendance.value[idx].status = 'present';
+                        } else {
+                            attendance.value.push({ studentId: std.id, date: attendanceDate.value, status: 'present' });
+                        }
+                    });
+                };
+
+                const saveAttendance = async () => {
+                    isUploading.value = true;
+                    try {
+                        await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
+                        showModal('สำเร็จ', `บันทึกการเช็คชื่อของวันที่ ${attendanceDate.value} เรียบร้อยแล้วจ้า! 📝✨`);
+                    } catch (e) {
+                        showModal('ข้อผิดพลาด', 'บันทึกไม่ได้: ' + e.message);
+                    } finally {
+                        isUploading.value = false;
+                    }
+                };
+
                 const getAttendanceStats = (stdId) => {
                     let records = attendance.value.filter(a => a.studentId === stdId);
                     if (attMode.value === 'daily') {
@@ -1219,10 +1254,19 @@
                 const uploadProfilePic = async (event, studentObj) => {
                     const file = event.target.files[0];
                     if (!file) return;
+                    
+                    // สร้างรูปจำลองเพื่อแสดงผลให้เห็นทันที ไม่ต้องรอคลาวด์
+                    const tempUrl = URL.createObjectURL(file);
+                    const oldUrl = studentObj.profileUrl;
+                    studentObj.profileUrl = tempUrl;
+                    if (user.value && user.value.id === studentObj.id) {
+                        user.value.profileUrl = tempUrl;
+                    }
+
                     isUploading.value = true;
                     try {
                         const url = await uploadImageToDrive(file);
-                        studentObj.profileUrl = url;
+                        studentObj.profileUrl = url; // สลับเป็นลิงก์จริงที่ได้จากคลาวด์
                         if (user.value && user.value.id === studentObj.id) {
                             user.value.profileUrl = url;
                         }
@@ -1230,6 +1274,9 @@
                         await saveDataToCloud(); // บังคับเซฟทันทีเมื่ออัปโหลดเสร็จ
                         showModal('น่ารักมาก!', 'อัปโหลดรูปโปรไฟล์สำเร็จแล้วจ้า ✨');
                     } catch(e) {
+                        // หากอัปโหลดไม่ผ่าน ให้คืนค่าเป็นรูปเดิม
+                        studentObj.profileUrl = oldUrl; 
+                        if (user.value && user.value.id === studentObj.id) user.value.profileUrl = oldUrl;
                         showModal('ข้อผิดพลาด', 'อัปโหลดรูปไม่สำเร็จ: ' + (e.message || e.toString()));
                     } finally {
                         isUploading.value = false;
@@ -1440,12 +1487,21 @@
                 const uploadSettingImage = async (event, settingKey) => {
                     const file = event.target.files[0];
                     if (!file) return;
+
+                    // สร้างรูปจำลองให้แอดมินเห็นความเปลี่ยนแปลงทันที
+                    const tempUrl = URL.createObjectURL(file);
+                    const oldUrl = settings.value[settingKey];
+                    settings.value[settingKey] = tempUrl;
+
                     isUploading.value = true;
                     try {
                         const url = await uploadImageToDrive(file);
                         settings.value[settingKey] = url;
+                        hasPendingChanges = true;
+                        await saveDataToCloud();
                         showModal('สำเร็จ', 'อัปโหลดรูปภาพตกแต่งสำเร็จ! อย่าลืมกดบันทึกการตั้งค่าด้วยนะ');
                     } catch(e) {
+                        settings.value[settingKey] = oldUrl; // หากพังให้คืนค่าเดิม
                         showModal('ข้อผิดพลาด', e.toString());
                     } finally {
                         isUploading.value = false;
@@ -1526,6 +1582,7 @@
                     const record = attendance.value.find(a => a.studentId === user.value.id && a.date === today);
                     if (!record) return { label: 'ยังไม่เช็ค', color: '#9ca3af' };
                     if (record.status === 'present') return { label: 'มาเรียน', color: '#10b981' };
+                    if (record.status === 'activity') return { label: 'ไปทำกิจกรรม', color: '#8b5cf6' };
                     if (record.status === 'absent') return { label: 'ขาดเรียน', color: '#ef4444' };
                     if (record.status === 'leave') return { label: 'ลา', color: '#f59e0b' };
                     return { label: 'ยังไม่เช็ค', color: '#9ca3af' };
@@ -1547,11 +1604,11 @@
                 };
 
                 const exportExcelAttendance = () => {
-                    let csv = "ที่,รหัสนักเรียน,ชื่อ-สกุล,ชั้น,มาเรียน,ขาด,ลา,รวม,ร้อยละ,ผล\n";
+                    let csv = "ที่,รหัสนักเรียน,ชื่อ-สกุล,ชั้น,มาเรียน,กิจกรรม,ขาด,ลา,รวม,ร้อยละ,ผล\n";
                     filteredStudentsForReport.value.forEach((std, i) => {
                         const stat = getAttendanceStats(std.id);
                         const fullName = `"${std.fullname || std.name}"`;
-                        csv += `${i+1},${std.code},${fullName},${std.classRoom||'-'},${stat.present},${stat.absent},${stat.leave},${stat.total},${stat.percent},${stat.pass?'ผ่าน':'ไม่ผ่าน'}\n`;
+                        csv += `${i+1},${std.code},${fullName},${std.classRoom||'-'},${stat.present},${stat.activity},${stat.absent},${stat.leave},${stat.total},${stat.percent},${stat.pass?'ผ่าน':'ไม่ผ่าน'}\n`;
                     });
                     const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement("a");
@@ -1631,7 +1688,7 @@
                     studentSearch, viewingStudent, filteredStudentsForManagement, uploadProfilePic,
                     selectedStudents, isAllStudentsSelected, toggleSelectAllStudents, deleteSelectedStudents,
                     showOnlineImport, onlineSheetUrl, importFromOnlineSheet, importStudentsFile, exportStudentsExcel,
-                    getAttendanceStatusDisplay, toggleAttendance, getAttendanceStats, getStudentAllTimeStats,
+                    getAttendanceStatusDisplay, toggleAttendance, markAllPresent, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
                     exportJpg, exportExcelAttendance, exportExcelReport, printPage,
