@@ -907,6 +907,13 @@
                 let saveTimeout = null;
                 let hasPendingChanges = false; // Flag ป้องกันโหลดข้อมูลทับตอนกำลังเซฟ
 
+                // ฟังก์ชันแปลงลิงก์ Google Drive ให้แสดงผลรูปได้ 100%
+                const fixDriveUrl = (url) => {
+                    if(!url) return '';
+                    const m = url.match(/id=([^&]+)/);
+                    return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : url;
+                };
+
                 const loadDataFromCloud = async (isInitial = false) => {
                     if(!isInitial) isUploading.value = true;
                     try {
@@ -916,15 +923,29 @@
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                             body: JSON.stringify({ action: 'loadData' })
                         });
-                        const data = await res.json();
+                        const text = await res.text();
+                        let data;
+                        try { data = JSON.parse(text); } catch(e) { throw new Error('Invalid Data'); }
+                        
                         if(data.status === 'success') {
                             isLocalSaving = true; // หยุด watch ชั่วคราวตอนโหลด
                             
-                            // โหลดข้อมูลลง State (เอาเงื่อนไข length > 0 ออก เพื่อให้ลบข้อมูลจนหมดได้)
-                            if (data.data.settings && Object.keys(data.data.settings).length > 0) settings.value = data.data.settings;
-                            if (data.data.students) students.value = data.data.students;
+                            // แปลงรูประบบและโหลดข้อมูลลง State
+                            if (data.data.settings) {
+                                ['loginBanner','iconStudent','iconTeacher','teacher1','teacher2'].forEach(k => {
+                                    if(data.data.settings[k]) data.data.settings[k] = fixDriveUrl(data.data.settings[k]);
+                                });
+                                if(Object.keys(data.data.settings).length > 0) settings.value = data.data.settings;
+                            }
+                            if (data.data.students) {
+                                data.data.students.forEach(s => s.profileUrl = fixDriveUrl(s.profileUrl));
+                                students.value = data.data.students;
+                            }
                             if (data.data.attendance) attendance.value = data.data.attendance;
-                            if (data.data.tasks) tasks.value = data.data.tasks;
+                            if (data.data.tasks) {
+                                data.data.tasks.forEach(t => t.imageUrl = fixDriveUrl(t.imageUrl));
+                                tasks.value = data.data.tasks;
+                            }
                             
                             setTimeout(() => { isLocalSaving = false; }, 1000);
                             if(!isInitial) showModal('สำเร็จ', 'ดึงข้อมูลจากระบบออนไลน์อัปเดตล่าสุดแล้ว! 📥');
@@ -949,13 +970,25 @@
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                             body: JSON.stringify({ action: 'loadData' })
                         });
-                        const data = await res.json();
+                        const text = await res.text();
+                        let data;
+                        try { data = JSON.parse(text); } catch(e) { return; }
+                        
+                        // 🔥 ตรวจสอบอีกครั้ง! ป้องกันผู้ใช้พิมพ์หรือกดคลิกระหว่างที่รอข้อมูลวิ่งกลับมา
+                        if (hasPendingChanges) return; 
+                        
                         if(data.status === 'success') {
                             isLocalSaving = true;
                             if (data.data.settings && Object.keys(data.data.settings).length > 0) settings.value = data.data.settings;
-                            if (data.data.students) students.value = data.data.students;
+                            if (data.data.students) {
+                                data.data.students.forEach(s => s.profileUrl = fixDriveUrl(s.profileUrl));
+                                students.value = data.data.students;
+                            }
                             if (data.data.attendance) attendance.value = data.data.attendance;
-                            if (data.data.tasks) tasks.value = data.data.tasks;
+                            if (data.data.tasks) {
+                                data.data.tasks.forEach(t => t.imageUrl = fixDriveUrl(t.imageUrl));
+                                tasks.value = data.data.tasks;
+                            }
                             setTimeout(() => { isLocalSaving = false; }, 1000);
                         }
                     } catch (e) {
@@ -1098,6 +1131,7 @@
                 };
 
                 const toggleAttendance = (stdId) => {
+                    hasPendingChanges = true; // ล็อคระบบ Sync อัตโนมัติทันทีที่กด!
                     const idx = attendance.value.findIndex(a => a.studentId === stdId && a.date === attendanceDate.value);
                     const order = ['none', 'present', 'leave', 'absent'];
                     let currentStatus = 'none';
@@ -1192,9 +1226,11 @@
                         if (user.value && user.value.id === studentObj.id) {
                             user.value.profileUrl = url;
                         }
+                        hasPendingChanges = true;
+                        await saveDataToCloud(); // บังคับเซฟทันทีเมื่ออัปโหลดเสร็จ
                         showModal('น่ารักมาก!', 'อัปโหลดรูปโปรไฟล์สำเร็จแล้วจ้า ✨');
                     } catch(e) {
-                        showModal('ข้อผิดพลาด', e.toString());
+                        showModal('ข้อผิดพลาด', 'อัปโหลดรูปไม่สำเร็จ: ' + (e.message || e.toString()));
                     } finally {
                         isUploading.value = false;
                         event.target.value = '';
@@ -1388,7 +1424,7 @@
                             try {
                                 const result = JSON.parse(text);
                                 if (result.status === 'success') {
-                                    resolve(result.url);
+                                    resolve(fixDriveUrl(result.url)); // แปลงลิงก์ให้แสดงผลได้ทันทีก่อนส่งกลับ
                                 } else {
                                     reject(result.message);
                                 }
@@ -1431,9 +1467,9 @@
                             try {
                                 uploadedUrl = await uploadImageToDrive(pendingFile.value);
                             } catch (e) {
-                                showModal('อัปโหลดล้มเหลว', e.toString());
-                                isUploading.value = false;
-                                return;
+                                // หากรูปอัปโหลดไม่ผ่าน ให้เเจ้งเตือนแต่ "ให้บันทึกข้อความต่อไป" 
+                                showModal('แจ้งเตือน', 'อัปโหลดรูปไม่สำเร็จ แต่ระบบจะบันทึกข้อความการบ้านไว้ให้นะจ๊ะ: ' + (e.message || e.toString()));
+                                uploadedUrl = ''; 
                             }
                             isUploading.value = false;
                             pendingFile.value = null;
@@ -1458,8 +1494,8 @@
                         
                         newTask.value = { date: new Date().toISOString().split('T')[0], dueDate: '', subject: '', detail: '' };
                         hasPendingChanges = true;
-                        showModal('สำเร็จ', 'บันทึกการบ้านลงระบบเรียบร้อยแล้วจ้า! 📝✨');
                         await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
+                        showModal('สำเร็จ', 'บันทึกการบ้านลงระบบเรียบร้อยแล้วจ้า! 📝✨');
                     } catch (err) {
                         showModal('ข้อผิดพลาด', 'บันทึกไม่ได้จ้า: ' + err.message);
                         isUploading.value = false;
