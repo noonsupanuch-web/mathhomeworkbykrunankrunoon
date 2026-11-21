@@ -196,7 +196,7 @@
                 </div>
             </div>
 
-            <div class="p-4 md:p-8 flex-1 flex flex-col max-h-[80vh] overflow-y-auto">
+            <div class="p-4 md:p-8 flex-1 flex flex-col">
                 
                 <!-- Loading State -->
                 <div v-if="isLoading" class="flex-1 flex flex-col items-center justify-center space-y-4">
@@ -528,7 +528,10 @@
                                     <input type="text" v-model="newStudent.code" placeholder="รหัสนักเรียน (สำหรับ Login)" class="border-2 rounded-xl p-3 focus:outline-none font-bold" :style="{ borderColor: settings.themeColor + '40' }">
                                     <input type="text" v-model="newStudent.name" placeholder="ชื่อเล่น" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                     <input type="text" v-model="newStudent.fullname" placeholder="ชื่อ-สกุล" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
-                                    <input type="text" v-model="newStudent.classRoom" placeholder="ห้องเรียน (เช่น ม.1/1)" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="text" v-model="newStudent.classRoom" list="class-list" placeholder="ห้องเรียน (เช่น ม.1/1)" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <datalist id="class-list">
+                                        <option v-for="c in uniqueClasses" :key="c" :value="c"></option>
+                                    </datalist>
                                     <input type="text" v-model="newStudent.password" placeholder="รหัสผ่าน (เว้นว่างใช้ส่วนกลาง)" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                 </div>
                                 <button @click="addStudent" class="px-6 py-3 text-white font-bold rounded-xl shadow-md transition-transform hover:scale-105" :style="{ backgroundColor: settings.themeColor }">
@@ -727,12 +730,22 @@
                                     <input type="date" v-model="newTask.date" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                 </div>
                                 <div class="md:col-span-3">
-                                    <label class="block text-xs font-bold text-gray-500 mb-1">วิชา</label>
-                                    <input type="text" v-model="newTask.subject" required placeholder="เช่น คณิตศาสตร์" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">กำหนดส่ง (ถ้ามี)</label>
+                                    <input type="date" v-model="newTask.dueDate" class="w-full p-3 border-2 rounded-xl focus:outline-none bg-gray-50" :style="{ borderColor: settings.themeColor + '40' }">
                                 </div>
                                 <div class="md:col-span-6">
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">วิชา</label>
+                                    <input type="text" v-model="newTask.subject" list="subject-list" required placeholder="เช่น คณิตศาสตร์" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <datalist id="subject-list">
+                                        <option v-for="sub in allSubjects" :key="sub" :value="sub"></option>
+                                    </datalist>
+                                </div>
+                                <div class="md:col-span-12">
                                     <label class="block text-xs font-bold text-gray-500 mb-1">รายละเอียดงาน</label>
-                                    <input type="text" v-model="newTask.detail" required placeholder="เช่น ทำแบบฝึกหัดหน้า 15" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="text" v-model="newTask.detail" list="detail-list" required placeholder="เช่น ทำแบบฝึกหัดหน้า 15" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <datalist id="detail-list">
+                                        <option v-for="det in allDetails" :key="det" :value="det"></option>
+                                    </datalist>
                                 </div>
                                 <div class="md:col-span-12">
                                     <label class="block text-xs font-bold text-gray-500 mb-1">แนบรูปภาพ (ไม่บังคับ)</label>
@@ -763,8 +776,9 @@
                             <div v-else class="space-y-3 overflow-y-auto max-h-[400px] pr-2">
                                 <div v-for="task in myTasks" :key="task.id" class="flex flex-col md:flex-row justify-between md:items-center p-4 rounded-2xl border-2 transition-all hover:bg-gray-50" :style="{ borderColor: task.isCompleted ? '#10b98140' : settings.themeColor + '40' }">
                                     <div class="mb-3 md:mb-0">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <span class="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">{{ task.date }}</span>
+                                        <div class="flex items-center flex-wrap gap-2 mb-1">
+                                            <span class="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">สั่ง: {{ task.date }}</span>
+                                            <span v-if="task.dueDate" class="text-xs font-bold px-2 py-1 bg-red-100 rounded text-red-600">ส่ง: {{ task.dueDate }}</span>
                                             <span class="font-bold text-gray-800">{{ task.subject }}</span>
                                         </div>
                                         <p class="text-gray-600">{{ task.detail }}</p>
@@ -857,7 +871,7 @@
                 const reportStartDate = ref(new Date().toISOString().split('T')[0]);
                 const reportEndDate = ref(new Date().toISOString().split('T')[0]);
 
-                const newTask = ref({ date: new Date().toISOString().split('T')[0], subject: '', detail: '' });
+                const newTask = ref({ date: new Date().toISOString().split('T')[0], dueDate: '', subject: '', detail: '' });
                 const pendingFile = ref(null);
                 const pendingImageUrl = ref(''); // เพิ่ม state สำหรับพรีวิวรูป
                 const newStudent = ref({ code: '', name: '', fullname: '', classRoom: '', password: '', profileUrl: '' });
@@ -891,6 +905,7 @@
                 // ==========================================
                 let isLocalSaving = false;
                 let saveTimeout = null;
+                let hasPendingChanges = false; // Flag ป้องกันโหลดข้อมูลทับตอนกำลังเซฟ
 
                 const loadDataFromCloud = async (isInitial = false) => {
                     if(!isInitial) isUploading.value = true;
@@ -905,9 +920,9 @@
                         if(data.status === 'success') {
                             isLocalSaving = true; // หยุด watch ชั่วคราวตอนโหลด
                             
-                            // โหลดข้อมูลลง State
+                            // โหลดข้อมูลลง State (เอาเงื่อนไข length > 0 ออก เพื่อให้ลบข้อมูลจนหมดได้)
                             if (data.data.settings && Object.keys(data.data.settings).length > 0) settings.value = data.data.settings;
-                            if (data.data.students && data.data.students.length > 0) students.value = data.data.students;
+                            if (data.data.students) students.value = data.data.students;
                             if (data.data.attendance) attendance.value = data.data.attendance;
                             if (data.data.tasks) tasks.value = data.data.tasks;
                             
@@ -924,7 +939,8 @@
                 };
 
                 const loadDataSilently = async () => {
-                    if(isOnlineSyncing.value || isUploading.value) return; // ไม่ดึงข้อมูลแทรกถ้าแอปกำลังบันทึกหรืออัปโหลดรูปอยู่
+                    // ป้องกันดึงข้อมูลมาทับ หากหน้าเว็บกำลังบันทึก อัปโหลดรูป หรือมีข้อมูลรอเซฟอยู่
+                    if(isOnlineSyncing.value || isUploading.value || hasPendingChanges) return; 
                     isOnlineSyncing.value = true;
                     try {
                         const res = await fetch(APPS_SCRIPT_URL, {
@@ -935,21 +951,22 @@
                         });
                         const data = await res.json();
                         if(data.status === 'success') {
-                            isLocalSaving = true; // ล็อคไม่ให้ watcher ทำงานเซฟกลับตอนโหลดข้อมูล
+                            isLocalSaving = true;
                             if (data.data.settings && Object.keys(data.data.settings).length > 0) settings.value = data.data.settings;
-                            if (data.data.students && data.data.students.length > 0) students.value = data.data.students;
+                            if (data.data.students) students.value = data.data.students;
                             if (data.data.attendance) attendance.value = data.data.attendance;
                             if (data.data.tasks) tasks.value = data.data.tasks;
                             setTimeout(() => { isLocalSaving = false; }, 1000);
                         }
                     } catch (e) {
-                        // ปิดแจ้งเตือน Error ใน Console สำหรับการโหลดเงียบ เพื่อไม่ให้รบกวนการทำงานของแอปพลิเคชัน
+                        // ปิดแจ้งเตือน Error ใน Console สำหรับการโหลดเงียบ
                     } finally {
                         isOnlineSyncing.value = false;
                     }
                 };
 
                 const saveDataToCloud = async () => {
+                    clearTimeout(saveTimeout);
                     isOnlineSyncing.value = true;
                     try {
                         const payload = {
@@ -965,9 +982,14 @@
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                             body: JSON.stringify(payload)
                         });
-                        return await res.json();
+                        const result = await res.json();
+                        if(result.status === 'success') {
+                            hasPendingChanges = false; // ปลดล็อคเมื่อเซฟข้อมูลสำเร็จ
+                        }
+                        return result;
                     } catch (e) {
                         console.warn("Save Error (Network/CORS) - Data is saved locally for now.");
+                        hasPendingChanges = true; // เก็บสถานะล็อคไว้ให้ลองเซฟใหม่
                     } finally {
                         setTimeout(() => isOnlineSyncing.value = false, 500);
                     }
@@ -976,6 +998,7 @@
                 // บันทึกขึ้น Cloud อัตโนมัติทุกครั้งที่มีการแก้ข้อมูลแอดมินหรือเด็กพิมพ์งาน
                 watch([settings, students, attendance, tasks], () => {
                     if (!isLocalSaving && !isLoading.value) {
+                        hasPendingChanges = true; // ล็อคไม่ให้ดึงข้อมูลทับทันทีที่มีการเปลี่ยนแปลง
                         clearTimeout(saveTimeout);
                         saveTimeout = setTimeout(saveDataToCloud, 2000); // หน่วงเวลา 2 วิเมื่อพิมพ์เสร็จ
                     }
@@ -984,6 +1007,18 @@
                 // Computed
                 const uniqueClasses = computed(() => {
                     return [...new Set(students.value.map(s => s.classRoom).filter(Boolean))];
+                });
+
+                // สร้างลิสต์วิชาและรายละเอียดที่เคยพิมพ์ไปแล้ว เพื่อทำ Autofill
+                const baseSubjects = ['คณิตศาสตร์พื้นฐาน', 'คณิตศาสตร์เพิ่มเติม', 'ภาษาไทย', 'ภาษาอังกฤษ', 'วิทยาศาสตร์', 'สังคมศึกษา', 'ประวัติศาสตร์', 'สุขศึกษาและพลศึกษา', 'ศิลปะ', 'การงานอาชีพ', 'คอมพิวเตอร์', 'แนะแนว'];
+                const allSubjects = computed(() => {
+                    const usedSubjects = tasks.value.map(t => t.subject).filter(Boolean);
+                    return [...new Set([...baseSubjects, ...usedSubjects])].sort();
+                });
+                
+                const allDetails = computed(() => {
+                    const usedDetails = tasks.value.map(t => t.detail).filter(Boolean);
+                    return [...new Set(usedDetails)].sort();
                 });
 
                 const filteredStudentsForReport = computed(() => {
@@ -1138,10 +1173,12 @@
                 };
 
                 const deleteSelectedStudents = () => {
-                    showModal('ยืนยันลบข้อมูล', `ต้องการลบนักเรียนที่เลือกจำนวน ${selectedStudents.value.length} คนใช่หรือไม่?`, 'confirm', () => {
+                    showModal('ยืนยันลบข้อมูล', `ต้องการลบนักเรียนที่เลือกจำนวน ${selectedStudents.value.length} คนใช่หรือไม่?`, 'confirm', async () => {
                         students.value = students.value.filter(s => !selectedStudents.value.includes(s.id));
                         selectedStudents.value = [];
+                        hasPendingChanges = true;
                         closeModal();
+                        await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
                     });
                 };
 
@@ -1165,9 +1202,11 @@
                 };
 
                 const deleteStudent = (id) => {
-                    showModal('ยืนยัน', 'ต้องการลบนักเรียนคนนี้ใช่หรือไม่?', 'confirm', () => {
+                    showModal('ยืนยัน', 'ต้องการลบนักเรียนคนนี้ใช่หรือไม่?', 'confirm', async () => {
                         students.value = students.value.filter(s => s.id !== id);
+                        hasPendingChanges = true;
                         closeModal();
+                        await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
                     });
                 };
 
@@ -1380,52 +1419,68 @@
 
                 // Methods - Student Dashboard
                 const addTask = async () => {
-                    let uploadedUrl = '';
-                    if (pendingFile.value) {
-                        isUploading.value = true;
-                        try {
-                            uploadedUrl = await uploadImageToDrive(pendingFile.value);
-                        } catch (e) {
-                            showModal('อัปโหลดล้มเหลว', e.toString());
-                            isUploading.value = false;
+                    try {
+                        if (!newTask.value.subject || !newTask.value.detail) {
+                            showModal('แจ้งเตือน', 'กรุณากรอกวิชาและรายละเอียดการบ้านก่อนนะจ๊ะ');
                             return;
                         }
-                        isUploading.value = false;
-                        pendingFile.value = null;
-                        pendingImageUrl.value = ''; // ล้างพรีวิวรูปหลังอัปโหลดเสร็จ
-                        
-                        const fileInput = document.getElementById('taskFileInput');
-                        if (fileInput) fileInput.value = '';
-                    }
 
-                    tasks.value.push({ 
-                        id: Date.now().toString(), 
-                        studentId: user.value.id, 
-                        date: newTask.value.date,
-                        subject: newTask.value.subject,
-                        detail: newTask.value.detail,
-                        imageUrl: uploadedUrl,
-                        isCompleted: false 
-                    });
-                    newTask.value = { date: new Date().toISOString().split('T')[0], subject: '', detail: '' };
-                    
-                    showModal('สำเร็จ', 'บันทึกการบ้านลงระบบเรียบร้อยแล้วจ้า! 📝✨');
-                    saveDataToCloud(); // บังคับให้ระบบส่งข้อมูลขึ้นออนไลน์ทันที
+                        let uploadedUrl = '';
+                        if (pendingFile.value) {
+                            isUploading.value = true;
+                            try {
+                                uploadedUrl = await uploadImageToDrive(pendingFile.value);
+                            } catch (e) {
+                                showModal('อัปโหลดล้มเหลว', e.toString());
+                                isUploading.value = false;
+                                return;
+                            }
+                            isUploading.value = false;
+                            pendingFile.value = null;
+                            pendingImageUrl.value = '';
+                            
+                            const fileInput = document.getElementById('taskFileInput');
+                            if (fileInput) fileInput.value = '';
+                        }
+
+                        if (!tasks.value) tasks.value = [];
+
+                        tasks.value.push({ 
+                            id: Date.now().toString(), 
+                            studentId: user.value.id, 
+                            date: newTask.value.date || new Date().toISOString().split('T')[0],
+                            dueDate: newTask.value.dueDate || '',
+                            subject: newTask.value.subject,
+                            detail: newTask.value.detail,
+                            imageUrl: uploadedUrl,
+                            isCompleted: false 
+                        });
+                        
+                        newTask.value = { date: new Date().toISOString().split('T')[0], dueDate: '', subject: '', detail: '' };
+                        hasPendingChanges = true;
+                        showModal('สำเร็จ', 'บันทึกการบ้านลงระบบเรียบร้อยแล้วจ้า! 📝✨');
+                        await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
+                    } catch (err) {
+                        showModal('ข้อผิดพลาด', 'บันทึกไม่ได้จ้า: ' + err.message);
+                        isUploading.value = false;
+                    }
                 };
 
-                const toggleTaskStatus = (taskId) => {
+                const toggleTaskStatus = async (taskId) => {
                     const task = tasks.value.find(t => t.id === taskId);
                     if(task) {
                         task.isCompleted = !task.isCompleted;
-                        saveDataToCloud(); // บังคับให้ระบบอัปเดตออนไลน์ทันที
+                        hasPendingChanges = true;
+                        await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
                     }
                 };
 
                 const deleteTask = (taskId) => {
-                    showModal('ยืนยัน', 'ต้องการลบการบ้านชิ้นนี้ใช่หรือไม่?', 'confirm', () => {
+                    showModal('ยืนยัน', 'ต้องการลบการบ้านชิ้นนี้ใช่หรือไม่?', 'confirm', async () => {
                         tasks.value = tasks.value.filter(t => t.id !== taskId);
-                        saveDataToCloud(); // บังคับให้ระบบอัปเดตออนไลน์ทันที
+                        hasPendingChanges = true;
                         closeModal();
+                        await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
                     });
                 };
 
@@ -1544,7 +1599,8 @@
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
                     exportJpg, exportExcelAttendance, exportExcelReport, printPage,
-                    saveDataToCloud, loadDataFromCloud, isOnlineSyncing
+                    saveDataToCloud, loadDataFromCloud, isOnlineSyncing,
+                    allSubjects, allDetails
                 };
             }
         }).mount('#app');
