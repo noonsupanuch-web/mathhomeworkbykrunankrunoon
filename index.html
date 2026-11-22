@@ -25,6 +25,9 @@
     <!-- SheetJS สำหรับนำเข้าและส่งออก Excel/CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+    <!-- jsPDF สำหรับส่งออก PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -125,7 +128,7 @@
                     
                     <div class="overflow-y-auto pr-2 flex-1">
                         <div class="w-24 h-24 md:w-32 md:h-32 mx-auto rounded-full border-4 shadow-md overflow-hidden mb-4 relative group bg-white shrink-0" :style="{ borderColor: settings.themeColor }">
-                            <img v-if="viewingStudent.profileUrl" :src="viewingStudent.profileUrl" class="w-full h-full object-cover">
+                            <img v-if="viewingStudent.profileUrl" :src="viewingStudent.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-full h-full object-cover">
                             <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-4xl md:text-5xl">👧👦</div>
                             
                             <!-- Upload overlay (เฉพาะ Admin หรือเจ้าของโปรไฟล์ถึงจะเปลี่ยนรูปได้) -->
@@ -165,6 +168,10 @@
                                 <div class="md:col-span-2">
                                     <label class="text-xs font-bold text-gray-500">ชื่อ-สกุล</label>
                                     <input type="text" v-model="viewingStudent.fullname" class="w-full border-2 rounded-xl p-2 text-sm focus:outline-none focus:border-blue-400">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="text-xs font-bold text-gray-500">ลิงก์รูปโปรไฟล์ (URL)</label>
+                                    <input type="text" v-model="viewingStudent.profileUrl" placeholder="วางลิงก์รูปลงที่นี่ หรือกดอัปโหลดรูปที่วงกลมด้านบน" class="w-full border-2 rounded-xl p-2 text-sm focus:outline-none focus:border-blue-400 text-gray-500 bg-white">
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
@@ -206,9 +213,17 @@
 
                         <!-- ประวัติการส่งการบ้าน (เห็นเฉพาะแอดมินหรือเจ้าตัว) -->
                         <div v-if="user && (user.role === 'admin' || user.id === viewingStudent.id)">
-                            <h4 class="font-bold text-gray-700 mb-3 flex items-center gap-2 text-lg border-b-2 pb-2" :style="{ borderColor: settings.themeColor + '20' }">
-                                <span>📚</span> ประวัติการจดการบ้านทั้งหมด
-                            </h4>
+                            <div class="flex flex-col md:flex-row justify-between md:items-center mb-3 border-b-2 pb-2 gap-2" :style="{ borderColor: settings.themeColor + '20' }">
+                                <h4 class="font-bold text-gray-700 flex items-center gap-2 text-lg">
+                                    <span>📚</span> ประวัติการจดการบ้านทั้งหมด
+                                </h4>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs text-gray-500 font-bold self-center mr-1">ส่งออก:</span>
+                                    <button @click="exportStudentReportDoc(viewingStudent)" class="text-xs px-3 py-1.5 bg-blue-500 text-white font-bold rounded-lg shadow-sm hover:bg-blue-600 transition-transform hover:scale-105 flex items-center gap-1">📄 Word</button>
+                                    <button @click="exportStudentReportPdf(viewingStudent)" class="text-xs px-3 py-1.5 bg-red-500 text-white font-bold rounded-lg shadow-sm hover:bg-red-600 transition-transform hover:scale-105 flex items-center gap-1">📕 PDF</button>
+                                    <button @click="exportStudentReportImage(viewingStudent)" class="text-xs px-3 py-1.5 bg-green-500 text-white font-bold rounded-lg shadow-sm hover:bg-green-600 transition-transform hover:scale-105 flex items-center gap-1">🖼️ รูปภาพ</button>
+                                </div>
+                            </div>
                             
                             <div v-if="tasks.filter(t => t.studentId === viewingStudent.id).length === 0" class="text-center p-6 bg-gray-50 rounded-2xl text-gray-400 font-bold border-2 border-dashed">
                                 ยังไม่มีประวัติการจดการบ้านเลยจ้า ✌️
@@ -266,6 +281,41 @@
         </div>
         <div v-if="settings.teacher2" class="hidden xl:block absolute right-4 lg:right-12 bottom-0 w-48 h-auto z-20 cute-float-delayed">
             <img :src="settings.teacher2" alt="Teacher 2" class="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform" />
+        </div>
+
+        <!-- 📌 ส่วนที่ซ่อนไว้สำหรับสร้างรูปแบบรายงาน PDF และ รูปภาพ (ซ่อนจากการมองเห็นปกติ) -->
+        <div id="export-student-report" class="absolute top-[-9999px] left-[-9999px] bg-white p-8 w-[800px] text-gray-800 formal-font" style="z-index:-1;">
+            <div class="border-4 border-double border-gray-800 p-8 min-h-[500px]">
+                <h2 class="text-2xl font-bold text-center mb-8">
+                    รายงานการทำการบ้าน ของ {{ viewingStudent?.fullname || viewingStudent?.name }} 
+                    {{ viewingStudent?.classRoom || '' }} 
+                    {{ viewingStudent?.studentNo ? 'เลขที่ '+viewingStudent?.studentNo : '' }}
+                </h2>
+                
+                <div v-if="viewingStudent && getTasksForStudent(viewingStudent.id).length === 0" class="text-center text-gray-500 py-10">
+                    ไม่มีประวัติการส่งการบ้าน
+                </div>
+
+                <div v-for="(task, idx) in viewingStudent ? getTasksForStudent(viewingStudent.id) : []" :key="task.id" class="mb-6 border-b-2 border-dashed border-gray-300 pb-6">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-xl">{{ idx + 1 }}. วิชา: {{ task.subject }}</h3>
+                        <span class="px-3 py-1 rounded-full text-sm font-bold border-2" :class="task.isCompleted ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'">
+                            {{ task.isCompleted ? 'ส่งงานเรียบร้อยแล้ว' : 'ยังไม่ส่งงาน' }}
+                        </span>
+                    </div>
+                    <p class="text-lg mb-3"><strong>รายละเอียดงาน:</strong> {{ task.detail }}</p>
+                    <p class="text-sm text-gray-600 mb-4 font-bold bg-gray-50 p-2 rounded inline-block">
+                        📅 สั่ง: {{ task.date }} &nbsp;&nbsp;|&nbsp;&nbsp; ⏰ กำหนดส่ง: {{ task.dueDate || '-' }}
+                    </p>
+                    <div v-if="task.imageUrl || localImageMap[task.id]" class="mt-2 text-center bg-gray-100 p-2 rounded">
+                        <img :src="localImageMap[task.id] || task.imageUrl" class="max-w-full h-auto max-h-[400px] object-contain mx-auto border shadow-sm" crossorigin="anonymous">
+                    </div>
+                </div>
+                
+                <div class="mt-8 text-right text-sm text-gray-500">
+                    พิมพ์เมื่อ: {{ new Date().toLocaleString('th-TH') }}
+                </div>
+            </div>
         </div>
 
         <!-- กล่องหลักของแอป -->
@@ -469,7 +519,7 @@
                                     <div v-if="filteredStudentsForReport.length === 0" class="text-center py-10 text-gray-400 font-medium">ไม่พบรายชื่อนักเรียนจ้า</div>
                                     <div v-for="std in filteredStudentsForReport" :key="std.id" class="flex items-center justify-between p-4 rounded-2xl border-2 transition-colors bg-white shadow-sm hover:bg-gray-50" :style="{ borderColor: settings.themeColor + '40' }">
                                         <div class="flex items-center gap-4">
-                                            <img v-if="std.profileUrl" :src="std.profileUrl" class="w-12 h-12 rounded-full object-cover border-2 shadow-sm cursor-pointer hover:scale-110 transition-transform" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">
+                                            <img v-if="std.profileUrl" :src="std.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-12 h-12 rounded-full object-cover border-2 shadow-sm cursor-pointer hover:scale-110 transition-transform" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">
                                             <div v-else class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl border-2 cursor-pointer hover:scale-110 transition-transform" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">🧑</div>
                                             <div>
                                                 <span class="font-bold text-lg text-gray-700 cursor-pointer hover:text-blue-600 transition-colors" @click="viewingStudent = std">{{ std.name }}</span>
@@ -706,7 +756,7 @@
                                                     <input type="checkbox" v-model="selectedStudents" :value="std.id" class="w-4 h-4 rounded cursor-pointer" :style="{ accentColor: settings.themeColor }">
                                                 </td>
                                                 <td class="p-2 text-center">
-                                                    <img v-if="std.profileUrl" :src="std.profileUrl" class="w-10 h-10 rounded-full object-cover border shadow-sm mx-auto cursor-pointer" @click="viewingStudent = std">
+                                                    <img v-if="std.profileUrl" :src="std.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-10 h-10 rounded-full object-cover border shadow-sm mx-auto cursor-pointer" @click="viewingStudent = std">
                                                     <div v-else class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm mx-auto cursor-pointer" @click="viewingStudent = std">🧑</div>
                                                 </td>
                                                 <td class="p-1"><input type="text" v-model="std.code" class="w-full border-2 rounded p-2 text-sm font-mono text-center focus:outline-none focus:border-blue-400"></td>
@@ -835,7 +885,7 @@
                         <div class="bg-white p-6 rounded-3xl border-4 flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm relative overflow-hidden" :style="{ borderColor: settings.themeColor + '20' }">
                             <div class="flex items-center gap-4 relative z-10">
                                 <div class="w-16 h-16 rounded-full border-4 shadow-md bg-white overflow-hidden cursor-pointer hover:scale-105 transition-transform" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = user">
-                                    <img v-if="user.profileUrl" :src="user.profileUrl" class="w-full h-full object-cover">
+                                    <img v-if="user.profileUrl" :src="user.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-full h-full object-cover">
                                     <div v-else class="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">👧</div>
                                 </div>
                                 <div>
@@ -952,7 +1002,7 @@
                 const loginCode = ref('');
 
                 // ฝัง URL ของ Apps Script สำหรับใช้เป็น API ออนไลน์
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxwL2lPYNyBoF9n1TugZE1hXo4wj3HT5eHWGfGbU_RxOrFwt9EmLzqD8ITfvkGorkGp/exec';
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweg5E2PgPSV4c89Ex2RB88Hl1Vy13cjIg2ZhUPxCXCv3O9_tlU9NJvOtLV5QJxvz5xpQ/exec';
 
                 // ข้อมูลจำลองเริ่มแรก
                 const defaultSettings = {
@@ -1032,6 +1082,22 @@
                     if (name) document.title = name;
                 }, { immediate: true });
 
+                // Watcher เปลี่ยนรูปไอคอนเว็บ (Favicon & PWA App Icon) แบบไดนามิก
+                watch(() => settings.value.loginBanner, (newUrl) => {
+                    if (newUrl) {
+                        let icon = document.querySelector("link[rel*='icon']") || document.createElement('link');
+                        icon.type = 'image/png';
+                        icon.rel = 'icon';
+                        icon.href = newUrl;
+                        document.getElementsByTagName('head')[0].appendChild(icon);
+
+                        let appleIcon = document.querySelector("link[rel='apple-touch-icon']") || document.createElement('link');
+                        appleIcon.rel = 'apple-touch-icon';
+                        appleIcon.href = newUrl;
+                        document.getElementsByTagName('head')[0].appendChild(appleIcon);
+                    }
+                }, { immediate: true });
+
                 // ==========================================
                 // ระบบออนไลน์ 100% เชื่อมต่อ Google Sheets
                 // ==========================================
@@ -1039,10 +1105,11 @@
                 let saveTimeout = null;
                 let hasPendingChanges = false; // Flag ป้องกันโหลดข้อมูลทับตอนกำลังเซฟ
 
-                // ฟังก์ชันแปลงลิงก์ Google Drive ให้แสดงผลรูปได้ 100%
+                // ฟังก์ชันแปลงลิงก์ Google Drive ให้แสดงผลรูปได้ 100% ทะลุการบล็อกของ Google
                 const fixDriveUrl = (url) => {
                     if(!url) return '';
                     const m = url.match(/id=([^&]+)/);
+                    // เปลี่ยนไปใช้รูปแบบ Thumbnail API ป้องกันปัญหา Google บล็อกรูปภาพข้ามโดเมน
                     return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : url;
                 };
 
@@ -1848,6 +1915,82 @@
                     XLSX.writeFile(wb, `รายงานการบ้าน_${reportMode.value}_${new Date().toISOString().split('T')[0]}.xlsx`);
                 };
 
+                // ส่งออกการบ้านรายบุคคลเป็น Word
+                const exportStudentReportDoc = (student) => {
+                    if(!student) return;
+                    const studentTasks = getTasksForStudent(student.id);
+                    let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                    <head><meta charset='utf-8'><title>รายงานการทำการบ้าน</title></head><body style="font-family: 'Sarabun', sans-serif;">`;
+                    
+                    html += `<h2 style="text-align:center;">รายงานการทำการบ้าน ของ ${student.fullname || student.name} ${student.classRoom || ''} ${student.studentNo ? 'เลขที่ '+student.studentNo : ''}</h2><hr/>`;
+                    
+                    if (studentTasks.length === 0) {
+                        html += `<p style="text-align:center;">- ไม่มีประวัติการส่งการบ้าน -</p>`;
+                    }
+
+                    studentTasks.forEach((t, idx) => {
+                        html += `<div style="margin-bottom: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 15px;">`;
+                        html += `<h3>${idx + 1}. วิชา: ${t.subject}</h3>`;
+                        html += `<p><strong>รายละเอียด:</strong> ${t.detail}</p>`;
+                        html += `<p>สั่ง: ${t.date} &nbsp;&nbsp;&nbsp; กำหนดส่ง: ${t.dueDate || '-'} &nbsp;&nbsp;&nbsp; <strong>${t.isCompleted ? '<span style="color:green">ส่งงานเรียบร้อยแล้ว</span>' : '<span style="color:red">ยังไม่ส่งงาน</span>'}</strong></p>`;
+                        if (t.imageUrl || localImageMap.value[t.id]) {
+                            html += `<br/><img src="${localImageMap.value[t.id] || t.imageUrl}" style="max-width: 500px; max-height: 400px;" />`;
+                        }
+                        html += `</div>`;
+                    });
+                    html += `</body></html>`;
+
+                    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+                    const downloadLink = document.createElement("a");
+                    downloadLink.href = URL.createObjectURL(blob);
+                    downloadLink.download = `รายงานการบ้าน_${student.name}.doc`;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                };
+
+                // ส่งออกการบ้านรายบุคคลเป็น PDF
+                const exportStudentReportPdf = async (student) => {
+                    if(!student) return;
+                    isUploading.value = true;
+                    try {
+                        const el = document.getElementById('export-student-report');
+                        // ใช้ html2canvas ดึงภาพจาก div ที่ซ่อนไว้
+                        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF('p', 'mm', 'a4');
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                        
+                        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                        pdf.save(`รายงานการบ้าน_${student.name}.pdf`);
+                    } catch(e) {
+                        showModal('ข้อผิดพลาด', 'ไม่สามารถสร้าง PDF ได้: ' + e.message);
+                    } finally {
+                        isUploading.value = false;
+                    }
+                };
+
+                // ส่งออกการบ้านรายบุคคลเป็น รูปภาพ (JPG)
+                const exportStudentReportImage = async (student) => {
+                    if(!student) return;
+                    isUploading.value = true;
+                    try {
+                        const el = document.getElementById('export-student-report');
+                        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                        const link = document.createElement('a');
+                        link.download = `รายงานการบ้าน_${student.name}.jpg`;
+                        link.href = canvas.toDataURL('image/jpeg', 1.0);
+                        link.click();
+                    } catch(e) {
+                        showModal('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปภาพได้: ' + e.message);
+                    } finally {
+                        isUploading.value = false;
+                    }
+                };
+
                 const printPage = (elId) => {
                     const content = document.getElementById(elId).innerHTML;
                     const printWindow = window.open('', '', 'height=600,width=800');
@@ -1895,6 +2038,7 @@
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
                     exportJpg, exportExcelAttendance, exportExcelReport, printPage,
+                    exportStudentReportDoc, exportStudentReportPdf, exportStudentReportImage,
                     saveDataToCloud, loadDataFromCloud, isOnlineSyncing,
                     allSubjects, allDetails
                 };
