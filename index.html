@@ -97,22 +97,22 @@
 </head>
 <body class="transition-all duration-500 min-h-screen relative" id="app-container">
 
-    <div id="app" class="min-h-screen relative flex justify-center items-center p-4 md:p-8" :style="{ backgroundColor: settings.themeColor + '10' }">
+    <div id="app" class="min-h-screen relative flex justify-center items-center p-2 sm:p-4 md:p-8" :style="{ backgroundColor: settings.themeColor + '10' }">
         
         <!-- Global Modal (กล่องข้อความแจ้งเตือน/ยืนยัน) -->
         <transition name="fade">
             <div v-if="modal.isOpen" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl text-center border-4" :style="{ borderColor: settings.themeColor }">
-                    <div class="text-5xl mb-4 cute-float" v-if="modal.type === 'confirm'">🤔</div>
-                    <div class="text-5xl mb-4 cute-float" v-else>💡</div>
-                    <h3 class="text-2xl font-extrabold mb-2 text-gray-800">{{ modal.title }}</h3>
-                    <p class="text-gray-600 font-bold mb-6 text-lg">{{ modal.message }}</p>
+                <div class="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 w-full max-w-sm shadow-2xl text-center border-4" :style="{ borderColor: settings.themeColor }">
+                    <div class="text-4xl sm:text-5xl mb-4 cute-float" v-if="modal.type === 'confirm'">🤔</div>
+                    <div class="text-4xl sm:text-5xl mb-4 cute-float" v-else>💡</div>
+                    <h3 class="text-xl sm:text-2xl font-extrabold mb-2 text-gray-800">{{ modal.title }}</h3>
+                    <p class="text-gray-600 font-bold mb-6 text-base sm:text-lg">{{ modal.message }}</p>
                     
-                    <div class="flex gap-3 justify-center">
-                        <button v-if="modal.type === 'confirm'" @click="closeModal" class="px-6 py-3 rounded-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors">
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button v-if="modal.type === 'confirm'" @click="closeModal" class="px-6 py-3 rounded-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors w-full sm:w-auto">
                             ยกเลิก
                         </button>
-                        <button @click="modal.onConfirm ? modal.onConfirm() : closeModal()" class="px-6 py-3 rounded-xl font-bold text-white shadow-md hover:scale-105 transition-transform flex-1" :style="{ backgroundColor: settings.themeColor }">
+                        <button @click="modal.onConfirm ? modal.onConfirm() : closeModal()" class="px-6 py-3 rounded-xl font-bold text-white shadow-md hover:scale-105 transition-transform flex-1 w-full sm:w-auto" :style="{ backgroundColor: settings.themeColor }">
                             {{ modal.type === 'confirm' ? 'ยืนยัน' : 'ตกลงจ้า' }}
                         </button>
                     </div>
@@ -122,9 +122,9 @@
 
         <!-- Student Profile Modal -->
         <transition name="fade">
-            <div v-if="viewingStudent" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                <div class="bg-white rounded-[2.5rem] p-6 md:p-8 w-full max-w-3xl shadow-2xl border-4 relative max-h-[90vh] flex flex-col" :style="{ borderColor: settings.themeColor }">
-                    <button @click="viewingStudent = null" class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-10 h-10 flex items-center justify-center font-bold transition-transform hover:scale-110 shadow-sm z-10">X</button>
+            <div v-if="viewingStudent" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
+                <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] p-4 sm:p-6 md:p-8 w-full max-w-3xl shadow-2xl border-4 relative max-h-[95vh] sm:max-h-[90vh] flex flex-col" :style="{ borderColor: settings.themeColor }">
+                    <button @click="viewingStudent = null" class="absolute top-2 right-2 sm:top-4 sm:right-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-bold transition-transform hover:scale-110 shadow-sm z-10">X</button>
                     
                     <div class="overflow-y-auto pr-2 flex-1">
                         <div class="w-24 h-24 md:w-32 md:h-32 mx-auto rounded-full border-4 shadow-md overflow-hidden mb-4 relative group bg-white shrink-0" :style="{ borderColor: settings.themeColor }">
@@ -165,15 +165,15 @@
                                     <label class="text-xs font-bold text-gray-500">ชื่อเล่น</label>
                                     <input type="text" v-model="viewingStudent.name" class="w-full border-2 rounded-xl p-2 text-sm font-bold focus:outline-none focus:border-blue-400">
                                 </div>
-                                <div class="md:col-span-2">
+                                <div class="col-span-1 md:col-span-2">
                                     <label class="text-xs font-bold text-gray-500">ชื่อ-สกุล</label>
                                     <input type="text" v-model="viewingStudent.fullname" class="w-full border-2 rounded-xl p-2 text-sm focus:outline-none focus:border-blue-400">
                                 </div>
-                                <div class="md:col-span-2">
+                                <div class="col-span-1 md:col-span-2">
                                     <label class="text-xs font-bold text-gray-500">ลิงก์รูปโปรไฟล์ (URL)</label>
                                     <input type="text" v-model="viewingStudent.profileUrl" placeholder="วางลิงก์รูปลงที่นี่ หรือกดอัปโหลดรูปที่วงกลมด้านบน" class="w-full border-2 rounded-xl p-2 text-sm focus:outline-none focus:border-blue-400 text-gray-500 bg-white">
                                 </div>
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="grid grid-cols-2 gap-3 col-span-1 md:col-span-1">
                                     <div>
                                         <label class="text-xs font-bold text-gray-500">ห้องเรียน</label>
                                         <input type="text" v-model="viewingStudent.classRoom" class="w-full border-2 rounded-xl p-2 text-sm text-center focus:outline-none focus:border-blue-400">
@@ -183,7 +183,7 @@
                                         <input type="text" v-model="viewingStudent.studentNo" class="w-full border-2 rounded-xl p-2 text-sm text-center focus:outline-none focus:border-blue-400">
                                     </div>
                                 </div>
-                                <div>
+                                <div class="col-span-1 md:col-span-1">
                                     <label class="text-xs font-bold text-gray-500">รหัสผ่าน (เว้นว่าง = ใช้ส่วนกลาง)</label>
                                     <input type="text" v-model="viewingStudent.password" placeholder="รหัสผ่านส่วนตัว" class="w-full border-2 rounded-xl p-2 text-sm focus:outline-none focus:border-blue-400">
                                 </div>
@@ -192,10 +192,10 @@
                         </div>
                         
                         <!-- สถิติการเรียน/การบ้าน -->
-                        <div class="grid grid-cols-2 gap-4 text-left bg-blue-50 p-4 rounded-2xl border-2 mb-6 shadow-inner" :style="{ borderColor: settings.themeColor + '20' }">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left bg-blue-50 p-4 rounded-2xl border-2 mb-6 shadow-inner" :style="{ borderColor: settings.themeColor + '20' }">
                             <div>
                                 <p class="text-xs text-gray-500 font-bold mb-1">เวลาเรียน (มา/กิจกรรม/ขาด/ลา)</p>
-                                <p class="font-bold text-gray-800 text-sm md:text-lg bg-white inline-block px-3 py-1 rounded-lg shadow-sm border border-gray-100">
+                                <p class="font-bold text-gray-800 text-sm md:text-lg bg-white inline-block px-3 py-1 rounded-lg shadow-sm border border-gray-100 w-full sm:w-auto text-center">
                                     <span class="text-green-600" title="มาเรียน">{{ getStudentAllTimeStats(viewingStudent.id).present }}</span> / 
                                     <span class="text-purple-600" title="กิจกรรม">{{ getStudentAllTimeStats(viewingStudent.id).activity }}</span> / 
                                     <span class="text-red-500" title="ขาดเรียน">{{ getStudentAllTimeStats(viewingStudent.id).absent }}</span> / 
@@ -204,7 +204,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 font-bold mb-1">การบ้าน (เสร็จ/สั่งทั้งหมด)</p>
-                                <p class="font-bold text-blue-600 text-sm md:text-lg bg-white inline-block px-3 py-1 rounded-lg shadow-sm border border-gray-100">
+                                <p class="font-bold text-blue-600 text-sm md:text-lg bg-white inline-block px-3 py-1 rounded-lg shadow-sm border border-gray-100 w-full sm:w-auto text-center">
                                     ✅ {{ tasks.filter(t => t.studentId === viewingStudent.id && t.isCompleted).length }} / 
                                     📚 {{ tasks.filter(t => t.studentId === viewingStudent.id).length }}
                                 </p>
@@ -231,10 +231,10 @@
                             
                             <div v-else class="space-y-3">
                                 <div v-for="task in tasks.filter(t => t.studentId === viewingStudent.id).sort((a,b) => new Date(b.date) - new Date(a.date))" :key="task.id" 
-                                     class="p-4 rounded-2xl border-2 bg-white flex flex-col md:flex-row gap-4 justify-between items-start md:items-center shadow-sm transition-colors hover:bg-gray-50" 
+                                     class="p-4 rounded-2xl border-2 bg-white flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shadow-sm transition-colors hover:bg-gray-50" 
                                      :style="{ borderColor: task.isCompleted ? '#10b98140' : '#f59e0b40' }">
                                     
-                                    <div class="flex-1">
+                                    <div class="flex-1 w-full">
                                         <div class="flex flex-wrap gap-2 text-xs font-bold mb-2">
                                             <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded border">สั่ง: {{ task.date }}</span>
                                             <span v-if="task.dueDate" class="bg-red-50 text-red-600 px-2 py-1 rounded border border-red-100">กำหนดส่ง: {{ task.dueDate }}</span>
@@ -244,26 +244,26 @@
                                         
                                         <div v-if="task.imageUrl || localImageMap[task.id]" class="mt-3">
                                             <a :href="localImageMap[task.id] || task.imageUrl" target="_blank" class="inline-block" title="คลิกเพื่อดูรูปขนาดเต็ม">
-                                                <img :src="localImageMap[task.id] || task.imageUrl" class="h-20 w-auto rounded-lg border-2 hover:scale-105 transition-transform shadow-sm" alt="รูปแนบ">
+                                                <img :src="localImageMap[task.id] || task.imageUrl" class="h-24 sm:h-20 w-auto rounded-lg border-2 hover:scale-105 transition-transform shadow-sm" alt="รูปแนบ">
                                             </a>
                                         </div>
                                     </div>
 
-                                    <div class="flex flex-row md:flex-col gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                    <div class="flex flex-row sm:flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                                         <!-- แอดมินและเจ้าตัวกดเปลี่ยนสถานะได้ -->
                                         <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="toggleTaskStatus(task.id)" 
-                                                class="flex-1 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm transition-transform hover:scale-105" 
+                                                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm transition-transform hover:scale-105 text-center" 
                                                 :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
-                                            {{ task.isCompleted ? '✅ ทำเสร็จแล้ว' : '⏳ รอส่งงาน' }}
+                                            {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ รอส่งงาน' }}
                                         </button>
-                                        <span v-else class="flex-1 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm text-center" 
+                                        <span v-else class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm text-center" 
                                               :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
-                                            {{ task.isCompleted ? '✅ ทำเสร็จแล้ว' : '⏳ รอส่งงาน' }}
+                                            {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ รอส่งงาน' }}
                                         </span>
                                         
                                         <!-- แอดมินสามารถลบงานขยะทิ้งได้ -->
                                         <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="deleteTask(task.id)" 
-                                                class="px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 border border-red-200 transition-colors text-center">
+                                                class="flex-1 sm:flex-none px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 border border-red-200 transition-colors text-center">
                                             🗑️ ลบงาน
                                         </button>
                                     </div>
@@ -323,28 +323,28 @@
             
             <!-- Header -->
             <div class="p-4 sm:p-6 md:p-8 text-center text-white relative shadow-sm" :style="{ background: `linear-gradient(135deg, ${settings.themeColor}, ${settings.themeColor}dd)` }">
-                <h1 class="text-2xl sm:text-3xl md:text-5xl font-extrabold flex items-center justify-center flex-wrap gap-2 md:gap-3 drop-shadow-[0_4px_4px_rgba(0,0,0,0.15)] tracking-wide pr-10 md:pr-0">
+                <h1 class="text-xl sm:text-3xl md:text-5xl font-extrabold flex items-center justify-center flex-wrap gap-2 md:gap-3 drop-shadow-[0_4px_4px_rgba(0,0,0,0.15)] tracking-wide pr-12 md:pr-0">
                     🌸 {{ settings.clubName || 'ชุมนุมการบ้านคณิตติดเพื่อน' }} 📚
                 </h1>
-                <div class="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2">
-                    <span v-if="isOnlineSyncing" class="bg-green-400 text-white px-2 py-1 md:px-3 rounded-full text-[10px] md:text-xs font-bold animate-pulse shadow-sm hidden md:inline-block">
+                <div class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2">
+                    <span v-if="isOnlineSyncing" class="bg-green-400 text-white px-2 py-1 md:px-3 rounded-full text-[10px] md:text-xs font-bold animate-pulse shadow-sm hidden sm:inline-block">
                         ☁️ ออนไลน์
                     </span>
-                    <button v-if="user && user.isAdminMasquerading" @click="user = { role: 'admin' }" class="bg-yellow-400 text-yellow-900 hover:bg-yellow-500 px-3 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl font-bold text-xs md:text-sm shadow-md transition-transform hover:scale-105" title="กลับหน้าแอดมิน">
+                    <button v-if="user && user.isAdminMasquerading" @click="user = { role: 'admin' }" class="bg-yellow-400 text-yellow-900 hover:bg-yellow-500 px-2 py-1.5 md:px-4 md:py-2 rounded-xl md:rounded-2xl font-bold text-xs md:text-sm shadow-md transition-transform hover:scale-105" title="กลับหน้าแอดมิน">
                         👑 กลับ
                     </button>
                     <button v-if="user" @click="logout" class="bg-white/20 hover:bg-white/40 p-2 md:p-3 rounded-full transition-colors flex items-center justify-center" title="ออกจากระบบ">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                     </button>
                 </div>
             </div>
 
-            <div class="p-3 sm:p-4 md:p-8 flex-1 flex flex-col">
+            <div class="p-2 sm:p-4 md:p-8 flex-1 flex flex-col">
                 
                 <!-- Loading State -->
                 <div v-if="isLoading" class="flex-1 flex flex-col items-center justify-center space-y-4">
-                    <div class="text-6xl cute-float">⏳</div>
-                    <h2 class="text-xl font-bold text-gray-500">กำลังเชื่อมต่อข้อมูล...</h2>
+                    <div class="text-5xl sm:text-6xl cute-float">⏳</div>
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-500">กำลังเชื่อมต่อข้อมูล...</h2>
                 </div>
 
                 <!-- 1. LOGIN SCREEN -->
@@ -434,9 +434,9 @@
                     <div v-if="user && user.role === 'admin' && !isLoading" class="flex-1 flex flex-col w-full">
                         
                         <!-- Tabs -->
-                        <div class="flex flex-wrap gap-2 mb-6 border-b-2 pb-4" :style="{ borderColor: settings.themeColor + '20' }">
+                        <div class="flex flex-wrap gap-2 mb-4 md:mb-6 border-b-2 pb-3 md:pb-4 justify-center sm:justify-start" :style="{ borderColor: settings.themeColor + '20' }">
                             <button v-for="tab in adminTabs" :key="tab.id" @click="currentAdminTab = tab.id"
-                                class="flex items-center gap-2 px-5 py-3 rounded-full font-bold transition-all text-sm md:text-base"
+                                class="flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-full font-bold transition-all text-xs sm:text-sm md:text-base flex-1 sm:flex-none justify-center whitespace-nowrap"
                                 :class="currentAdminTab === tab.id ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
                                 :style="currentAdminTab === tab.id ? { backgroundColor: settings.themeColor } : {}">
                                 {{ tab.icon }} {{ tab.label }}
@@ -446,112 +446,116 @@
                         <!-- 2.1 TAB: Attendance -->
                         <div v-if="currentAdminTab === 'attendance'" class="space-y-4 fade-enter-active">
                             <!-- ฟอร์มกรองข้อมูลแบบทางการ -->
-                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4 shadow-sm">
-                                <div class="flex flex-wrap gap-4 items-center border-b pb-3">
-                                    <div class="flex items-center gap-2">
-                                        <label class="font-bold text-sm text-gray-700">ห้องเรียน</label>
-                                        <select v-model="attFilterClass" class="border rounded p-1 text-sm bg-white min-w-[100px]">
+                            <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 space-y-3 sm:space-y-4 shadow-sm">
+                                <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-start sm:items-center border-b pb-3">
+                                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                                        <label class="font-bold text-sm text-gray-700 min-w-[60px]">ห้องเรียน</label>
+                                        <select v-model="attFilterClass" class="border rounded p-1.5 text-sm bg-white flex-1 sm:min-w-[100px]">
                                             <option value="ทั้งหมด">ทั้งหมด</option>
                                             <option v-for="c in uniqueClasses" :key="c" :value="c">{{ c }}</option>
                                         </select>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <label class="font-bold text-sm text-gray-700">ภาคเรียน</label>
-                                        <select v-model="attFilterSemester" class="border rounded p-1 text-sm bg-white min-w-[120px]">
+                                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                                        <label class="font-bold text-sm text-gray-700 min-w-[60px]">ภาคเรียน</label>
+                                        <select v-model="attFilterSemester" class="border rounded p-1.5 text-sm bg-white flex-1 sm:min-w-[120px]">
                                             <option value="1">ภาคเรียนที่ 1</option>
                                             <option value="2">ภาคเรียนที่ 2</option>
                                         </select>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <label class="font-bold text-sm text-gray-700">ปีการศึกษา</label>
-                                        <input type="number" v-model="attFilterYear" class="border rounded p-1 text-sm bg-white w-20 text-center">
+                                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                                        <label class="font-bold text-sm text-gray-700 min-w-[60px]">ปีการศึกษา</label>
+                                        <input type="number" v-model="attFilterYear" class="border rounded p-1.5 text-sm bg-white flex-1 sm:w-20 text-center">
                                     </div>
                                 </div>
-                                <div class="flex flex-wrap gap-4 items-center">
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="attMode" value="daily" class="text-blue-500"> ดูรายวัน
-                                    </label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="attMode" value="all" class="text-blue-500"> ทั้งหมด
-                                    </label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="attMode" value="monthly" class="text-blue-500"> รายเดือน
-                                        <input type="month" v-model="attMonth" v-if="attMode === 'monthly'" class="border rounded p-1 ml-2 text-xs">
-                                    </label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="attMode" value="range" class="text-blue-500"> ช่วงวันที่
-                                        <div v-if="attMode === 'range'" class="flex items-center gap-1 ml-2">
-                                            <input type="date" v-model="attStartDate" class="border rounded p-1 text-xs"> ถึง
-                                            <input type="date" v-model="attEndDate" class="border rounded p-1 text-xs">
-                                        </div>
-                                    </label>
+                                <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-start sm:items-center">
+                                    <div class="flex flex-wrap gap-3 w-full sm:w-auto">
+                                        <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                            <input type="radio" v-model="attMode" value="daily" class="text-blue-500"> ดูรายวัน
+                                        </label>
+                                        <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                            <input type="radio" v-model="attMode" value="all" class="text-blue-500"> ทั้งหมด
+                                        </label>
+                                        <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                            <input type="radio" v-model="attMode" value="monthly" class="text-blue-500"> รายเดือน
+                                            <input type="month" v-model="attMonth" v-if="attMode === 'monthly'" class="border rounded p-1 ml-2 text-xs">
+                                        </label>
+                                        <label class="flex items-center gap-1 text-sm cursor-pointer w-full sm:w-auto mt-2 sm:mt-0">
+                                            <input type="radio" v-model="attMode" value="range" class="text-blue-500"> ช่วงวันที่
+                                            <div v-if="attMode === 'range'" class="flex items-center gap-1 ml-2 flex-wrap">
+                                                <input type="date" v-model="attStartDate" class="border rounded p-1 text-xs"> ถึง
+                                                <input type="date" v-model="attEndDate" class="border rounded p-1 text-xs">
+                                            </div>
+                                        </label>
+                                    </div>
                                     
-                                    <div class="ml-auto flex gap-2">
-                                        <button v-if="attMode !== 'daily' && dynamicAttendanceDates.length > 0" @click="clearDisplayedAttendance" class="px-3 py-1.5 bg-red-500 text-white rounded text-sm font-bold shadow hover:bg-red-600 flex items-center gap-1" title="ลบข้อมูลเช็คชื่อเฉพาะวันที่กำลังแสดงอยู่ในตารางนี้">🗑️ ล้างที่แสดง</button>
-                                        <button @click="exportExcelAttendance" class="px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-bold shadow hover:bg-blue-700 flex items-center gap-1">แสดงรายงาน / Excel</button>
-                                        <button @click="exportJpg('attendance-content', `เช็คชื่อ_${attMode}`)" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm font-bold shadow hover:bg-gray-300">รูปภาพ</button>
+                                    <div class="w-full lg:w-auto lg:ml-auto flex flex-wrap gap-2 mt-2 lg:mt-0 justify-end">
+                                        <button v-if="attMode !== 'daily' && dynamicAttendanceDates.length > 0" @click="clearDisplayedAttendance" class="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-red-500 text-white rounded text-sm font-bold shadow hover:bg-red-600 flex items-center gap-1" title="ลบข้อมูลเช็คชื่อเฉพาะวันที่กำลังแสดงอยู่ในตารางนี้">🗑️ ล้างที่แสดง</button>
+                                        <button @click="exportExcelAttendance" class="flex-1 sm:flex-none justify-center px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-bold shadow hover:bg-blue-700 flex items-center gap-1">แสดงรายงาน / Excel</button>
+                                        <button @click="exportJpg('attendance-content', `เช็คชื่อ_${attMode}`)" class="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm font-bold shadow hover:bg-gray-300">รูปภาพ</button>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div id="attendance-content" ref="attendanceContent" class="bg-white p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
+                            <div id="attendance-content" ref="attendanceContent" class="bg-white p-3 sm:p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
                                 
                                 <!-- แบบรายวัน (หน้าตาสำหรับกดเช็คชื่อ) -->
                                 <div v-if="attMode === 'daily'" class="space-y-4">
-                                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
-                                        <h3 class="font-bold text-xl flex items-center gap-2" :style="{ color: settings.themeColor }">
+                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                                        <h3 class="font-bold text-lg sm:text-xl flex items-center gap-2" :style="{ color: settings.themeColor }">
                                             <span>📅</span> เช็คชื่อประจำวัน
                                         </h3>
-                                        <div class="flex items-center gap-2 bg-blue-50 p-1.5 rounded-xl border border-blue-200 shadow-sm">
+                                        <div class="flex items-center gap-2 bg-blue-50 p-1.5 rounded-xl border border-blue-200 shadow-sm w-full sm:w-auto justify-between sm:justify-start">
                                             <label class="text-sm font-bold text-blue-800 ml-2">เลือกวันที่:</label>
-                                            <input type="date" v-model="attendanceDate" class="border-2 rounded-lg p-1.5 font-bold focus:outline-none bg-white text-blue-900 shadow-inner" :style="{ borderColor: settings.themeColor }"/>
+                                            <input type="date" v-model="attendanceDate" class="border-2 rounded-lg p-1.5 font-bold focus:outline-none bg-white text-blue-900 shadow-inner w-full sm:w-auto" :style="{ borderColor: settings.themeColor }"/>
                                         </div>
                                     </div>
                                     
                                     <div class="bg-indigo-50 p-3 md:p-4 rounded-xl border border-indigo-100 flex flex-col md:flex-row justify-between items-center gap-3 shadow-sm">
-                                        <div class="text-center md:text-left">
-                                            <p class="text-sm md:text-base font-bold text-indigo-900">กำลังจัดการข้อมูลของวันที่ <span class="text-indigo-700 bg-white px-2 py-0.5 rounded shadow-sm border border-indigo-100">{{ attendanceDate }}</span></p>
+                                        <div class="text-center md:text-left w-full">
+                                            <p class="text-sm md:text-base font-bold text-indigo-900">กำลังจัดการข้อมูลของวันที่ <span class="text-indigo-700 bg-white px-2 py-0.5 rounded shadow-sm border border-indigo-100 whitespace-nowrap">{{ attendanceDate }}</span></p>
                                             <p class="text-xs md:text-sm text-indigo-700 mt-1 font-medium">เช็คแล้ว <span class="font-bold text-indigo-900">{{ checkedCount }}</span> คน จากทั้งหมด {{ filteredStudentsForReport.length }} คน <br class="md:hidden">(เปลี่ยนวันที่ด้านบนเพื่อแก้ไขย้อนหลังได้เลย)</p>
                                         </div>
-                                        <div class="text-right whitespace-nowrap">
-                                            <span v-if="checkedCount === filteredStudentsForReport.length && filteredStudentsForReport.length > 0" class="text-sm font-bold text-green-700 bg-green-100 px-4 py-2 rounded-full border border-green-300 shadow-sm">✨ เช็คครบทุกคนแล้ว</span>
-                                            <span v-else-if="checkedCount > 0" class="text-sm font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-full border border-orange-300 shadow-sm">⏳ ยังเช็คไม่ครบ</span>
+                                        <div class="text-center md:text-right whitespace-nowrap w-full md:w-auto">
+                                            <span v-if="checkedCount === filteredStudentsForReport.length && filteredStudentsForReport.length > 0" class="text-sm font-bold text-green-700 bg-green-100 px-4 py-2 rounded-full border border-green-300 shadow-sm block sm:inline-block">✨ เช็คครบทุกคนแล้ว</span>
+                                            <span v-else-if="checkedCount > 0" class="text-sm font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-full border border-orange-300 shadow-sm block sm:inline-block">⏳ ยังเช็คไม่ครบ</span>
                                         </div>
                                     </div>
                                     
                                     <!-- เพิ่มปุ่ม มาเรียนทั้งหมด และ บันทึก -->
-                                    <div v-if="filteredStudentsForReport.length > 0" class="flex flex-wrap justify-end gap-2 mb-4 bg-gray-50 p-3 rounded-xl border" :style="{ borderColor: settings.themeColor + '20' }">
-                                        <button @click="clearAllAttendance" class="mr-auto px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-red-700 transition-colors flex items-center gap-1 hover:scale-105" title="รีเซตการเช็คชื่อทั้งหมด (ทุกวัน)">
+                                    <div v-if="filteredStudentsForReport.length > 0" class="flex flex-col sm:flex-row flex-wrap justify-end gap-2 mb-4 bg-gray-50 p-3 rounded-xl border" :style="{ borderColor: settings.themeColor + '20' }">
+                                        <button @click="clearAllAttendance" class="w-full sm:w-auto sm:mr-auto px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-red-700 transition-colors flex items-center justify-center gap-1 hover:scale-105" title="รีเซตการเช็คชื่อทั้งหมด (ทุกวัน)">
                                             🚨 รีเซตทั้งหมด
                                         </button>
-                                        <button @click="clearDailyAttendance" class="px-4 py-2 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm font-bold shadow-sm hover:bg-red-100 transition-colors flex items-center gap-1 hover:scale-105">
+                                        <button @click="clearDailyAttendance" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm font-bold shadow-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-1 hover:scale-105">
                                             🗑️ ล้างข้อมูลวันนี้
                                         </button>
-                                        <button @click="markAllPresent" class="px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow-md hover:bg-green-600 transition-colors flex items-center gap-1 hover:scale-105">
+                                        <button @click="markAllPresent" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow-md hover:bg-green-600 transition-colors flex items-center justify-center gap-1 hover:scale-105">
                                             ✅ มาเรียนทุกคน
                                         </button>
-                                        <button @click="saveAttendance" class="px-6 py-2 text-white rounded-xl text-sm font-bold shadow-md transition-transform hover:scale-105" :style="{ backgroundColor: settings.themeColor }">
+                                        <button @click="saveAttendance" class="w-full sm:w-auto px-6 py-2.5 sm:py-2 text-white rounded-xl text-sm font-bold shadow-md transition-transform hover:scale-105 flex items-center justify-center" :style="{ backgroundColor: settings.themeColor }">
                                             💾 บันทึก
                                         </button>
                                     </div>
 
                                     <div v-if="filteredStudentsForReport.length === 0" class="text-center py-10 text-gray-400 font-medium">ไม่พบรายชื่อนักเรียนจ้า</div>
-                                    <div v-for="std in filteredStudentsForReport" :key="std.id" class="flex items-center justify-between p-4 rounded-2xl border-2 transition-colors bg-white shadow-sm hover:bg-gray-50" :style="{ borderColor: settings.themeColor + '40' }">
-                                        <div class="flex items-center gap-4">
-                                            <img v-if="std.profileUrl" :src="std.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-12 h-12 rounded-full object-cover border-2 shadow-sm cursor-pointer hover:scale-110 transition-transform" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">
-                                            <div v-else class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl border-2 cursor-pointer hover:scale-110 transition-transform" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">🧑</div>
-                                            <div>
-                                                <span class="font-bold text-lg text-gray-700 cursor-pointer hover:text-blue-600 transition-colors" @click="viewingStudent = std">{{ std.name }}</span>
-                                                <div class="text-sm font-normal text-gray-500">
+                                    
+                                    <!-- List of Students for Daily Attendance -->
+                                    <div v-for="std in filteredStudentsForReport" :key="std.id" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-2xl border-2 transition-colors bg-white shadow-sm hover:bg-gray-50 gap-3 sm:gap-0" :style="{ borderColor: settings.themeColor + '40' }">
+                                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                                            <img v-if="std.profileUrl" :src="std.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-12 h-12 rounded-full object-cover border-2 shadow-sm cursor-pointer hover:scale-110 transition-transform shrink-0" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">
+                                            <div v-else class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl border-2 cursor-pointer hover:scale-110 transition-transform shrink-0" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">🧑</div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-bold text-base sm:text-lg text-gray-700 cursor-pointer hover:text-blue-600 transition-colors truncate" @click="viewingStudent = std">{{ std.name }}</div>
+                                                <div class="text-xs sm:text-sm font-normal text-gray-500 truncate">
                                                     {{ std.fullname || '-' }} 
                                                     <span v-if="std.classRoom">| ชั้น: {{ std.classRoom }}</span>
-                                                    <span v-if="std.studentNo">| เลขที่: {{ std.studentNo }}</span>
+                                                    <span v-if="std.studentNo" class="hidden sm:inline">| เลขที่: {{ std.studentNo }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <!-- ปุ่ม 3 สถานะ (มา, ขาด, ลา) -->
                                         <button @click="toggleAttendance(std.id)" 
-                                                class="px-6 py-2 rounded-xl font-bold text-white transition-transform hover:scale-105 shadow-md min-w-[120px]"
+                                                class="w-full sm:w-auto px-6 py-2.5 sm:py-2 rounded-xl font-bold text-white transition-transform hover:scale-105 shadow-md sm:min-w-[120px] text-center"
                                                 :style="{ backgroundColor: getAttendanceStatusDisplay(std.id).color }">
                                             {{ getAttendanceStatusDisplay(std.id).label }}
                                         </button>
@@ -628,44 +632,46 @@
 
                         <!-- 2.2 TAB: Reports -->
                         <div v-if="currentAdminTab === 'reports'" class="space-y-4 fade-enter-active">
-                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4 shadow-sm">
-                                <div class="flex flex-wrap gap-4 items-center">
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="reportMode" value="daily" class="text-blue-500"> ดูรายวัน
-                                        <input type="date" v-model="reportDate" v-if="reportMode === 'daily'" class="border rounded p-1 ml-2 text-xs">
-                                    </label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="reportMode" value="all" class="text-blue-500"> ทั้งหมด
-                                    </label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="reportMode" value="monthly" class="text-blue-500"> รายเดือน
-                                        <input type="month" v-model="reportMonth" v-if="reportMode === 'monthly'" class="border rounded p-1 ml-2 text-xs">
-                                    </label>
-                                    <label class="flex items-center gap-1 text-sm cursor-pointer">
-                                        <input type="radio" v-model="reportMode" value="range" class="text-blue-500"> ช่วงวันที่
-                                        <div v-if="reportMode === 'range'" class="flex items-center gap-1 ml-2">
-                                            <input type="date" v-model="reportStartDate" class="border rounded p-1 text-xs"> ถึง
-                                            <input type="date" v-model="reportEndDate" class="border rounded p-1 text-xs">
-                                        </div>
-                                    </label>
+                            <div class="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-200 space-y-3 shadow-sm">
+                                <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-start sm:items-center">
+                                    <div class="flex flex-wrap gap-3 w-full sm:w-auto">
+                                        <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                            <input type="radio" v-model="reportMode" value="daily" class="text-blue-500"> ดูรายวัน
+                                            <input type="date" v-model="reportDate" v-if="reportMode === 'daily'" class="border rounded p-1 ml-2 text-xs">
+                                        </label>
+                                        <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                            <input type="radio" v-model="reportMode" value="all" class="text-blue-500"> ทั้งหมด
+                                        </label>
+                                        <label class="flex items-center gap-1 text-sm cursor-pointer">
+                                            <input type="radio" v-model="reportMode" value="monthly" class="text-blue-500"> รายเดือน
+                                            <input type="month" v-model="reportMonth" v-if="reportMode === 'monthly'" class="border rounded p-1 ml-2 text-xs">
+                                        </label>
+                                        <label class="flex items-center gap-1 text-sm cursor-pointer w-full sm:w-auto mt-2 sm:mt-0">
+                                            <input type="radio" v-model="reportMode" value="range" class="text-blue-500"> ช่วงวันที่
+                                            <div v-if="reportMode === 'range'" class="flex items-center gap-1 ml-2 flex-wrap">
+                                                <input type="date" v-model="reportStartDate" class="border rounded p-1 text-xs"> ถึง
+                                                <input type="date" v-model="reportEndDate" class="border rounded p-1 text-xs">
+                                            </div>
+                                        </label>
+                                    </div>
                                     
-                                    <div class="ml-auto flex flex-wrap gap-2 justify-end">
-                                        <button @click="exportExcelReport" class="px-3 py-1.5 bg-green-600 text-white rounded text-sm font-bold shadow hover:bg-green-700 flex items-center gap-1 transition-transform hover:scale-105">📤 Excel</button>
-                                        <button @click="exportAdminReportDoc" class="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-bold shadow hover:bg-blue-700 flex items-center gap-1 transition-transform hover:scale-105">📄 Word</button>
-                                        <button @click="exportAdminReportPdf" class="px-3 py-1.5 bg-red-500 text-white rounded text-sm font-bold shadow hover:bg-red-600 flex items-center gap-1 transition-transform hover:scale-105">📕 PDF</button>
-                                        <button @click="exportAdminReportImage" class="px-3 py-1.5 bg-purple-500 text-white rounded text-sm font-bold shadow hover:bg-purple-600 flex items-center gap-1 transition-transform hover:scale-105">🖼️ รูปภาพ</button>
-                                        <button @click="printPage('report-content')" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm font-bold shadow hover:bg-gray-300 flex items-center gap-1 transition-transform hover:scale-105">🖨️ พิมพ์</button>
+                                    <div class="w-full lg:w-auto lg:ml-auto flex flex-wrap gap-2 mt-2 lg:mt-0 justify-end">
+                                        <button @click="exportExcelReport" class="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-green-600 text-white rounded text-sm font-bold shadow hover:bg-green-700 flex items-center gap-1 transition-transform hover:scale-105">📤 Excel</button>
+                                        <button @click="exportAdminReportDoc" class="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-bold shadow hover:bg-blue-700 flex items-center gap-1 transition-transform hover:scale-105">📄 Word</button>
+                                        <button @click="exportAdminReportPdf" class="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-red-500 text-white rounded text-sm font-bold shadow hover:bg-red-600 flex items-center gap-1 transition-transform hover:scale-105">📕 PDF</button>
+                                        <button @click="exportAdminReportImage" class="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-purple-500 text-white rounded text-sm font-bold shadow hover:bg-purple-600 flex items-center gap-1 transition-transform hover:scale-105">🖼️ รูปภาพ</button>
+                                        <button @click="printPage('report-content')" class="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm font-bold shadow hover:bg-gray-300 flex items-center gap-1 transition-transform hover:scale-105">🖨️ พิมพ์</button>
                                     </div>
                                 </div>
                             </div>
 
-                            <div id="report-content" class="bg-white p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
-                                <h3 class="font-bold text-xl mb-4 text-gray-800">
+                            <div id="report-content" class="bg-white p-4 sm:p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
+                                <h3 class="font-bold text-lg sm:text-xl mb-4 text-gray-800">
                                     รายงานการบ้าน 
                                     <span v-if="reportMode === 'daily'">ประจำวันที่ {{ reportDate }}</span>
                                     <span v-if="reportMode === 'monthly'">ประจำเดือน {{ reportMonth }}</span>
                                 </h3>
-                                <div class="overflow-x-auto">
+                                <div class="w-full overflow-x-auto">
                                     <table class="w-full text-left border-collapse border border-gray-300 text-sm min-w-[1000px]">
                                         <thead>
                                             <tr class="bg-blue-600 text-white font-bold">
@@ -708,14 +714,14 @@
 
                         <!-- 2.3 TAB: Students -->
                         <div v-if="currentAdminTab === 'students'" class="space-y-6 fade-enter-active">
-                            <div class="bg-white p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
+                            <div class="bg-white p-4 sm:p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
                                 <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
                                     <h3 class="text-xl font-bold" :style="{ color: settings.themeColor }">เพิ่มนักเรียนใหม่</h3>
-                                    <div class="flex flex-wrap gap-2">
-                                        <button @click="showOnlineImport = !showOnlineImport" class="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow hover:bg-indigo-600 transition-colors flex items-center gap-1">🌐 นำเข้าจากลิงก์ออนไลน์</button>
+                                    <div class="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
+                                        <button @click="showOnlineImport = !showOnlineImport" class="flex-1 sm:flex-none justify-center px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-bold shadow hover:bg-indigo-600 transition-colors flex items-center gap-1">🌐 นำเข้าออนไลน์</button>
                                         <input type="file" id="importFile" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" @change="importStudentsFile" class="hidden" />
-                                        <label for="importFile" class="cursor-pointer px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow hover:bg-green-600 transition-colors flex items-center">📥 นำเข้า (Excel/CSV)</label>
-                                        <button @click="exportStudentsExcel" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600 transition-colors">📤 ส่งออก (Excel)</button>
+                                        <label for="importFile" class="flex-1 sm:flex-none justify-center cursor-pointer px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow hover:bg-green-600 transition-colors flex items-center">📥 นำเข้า (Excel)</label>
+                                        <button @click="exportStudentsExcel" class="flex-1 sm:flex-none justify-center px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow hover:bg-blue-600 transition-colors">📤 ส่งออก (Excel)</button>
                                     </div>
                                 </div>
                                 
@@ -728,38 +734,38 @@
                                     <p class="text-xs text-indigo-600 mt-2">* ใช้รูปแบบคอลัมน์: รหัส | ชื่อเล่น | ชื่อ-สกุล | ชั้น | รหัสผ่าน(เว้นได้) | URLโปรไฟล์(เว้นได้)</p>
                                 </div>
 
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-                                    <input type="text" v-model="newStudent.code" placeholder="รหัสนักเรียน (สำหรับ Login)" class="border-2 rounded-xl p-3 focus:outline-none font-bold" :style="{ borderColor: settings.themeColor + '40' }">
-                                    <input type="text" v-model="newStudent.name" placeholder="ชื่อเล่น" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
-                                    <input type="text" v-model="newStudent.fullname" placeholder="ชื่อ-สกุล" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
-                                    <input type="text" v-model="newStudent.classRoom" list="class-list" placeholder="ห้องเรียน (เช่น ม.1/1)" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-4">
+                                    <input type="text" v-model="newStudent.code" placeholder="รหัสนักเรียน (สำหรับ Login)" class="border-2 rounded-xl p-2.5 sm:p-3 focus:outline-none font-bold w-full" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="text" v-model="newStudent.name" placeholder="ชื่อเล่น" class="border-2 rounded-xl p-2.5 sm:p-3 focus:outline-none w-full" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="text" v-model="newStudent.fullname" placeholder="ชื่อ-สกุล" class="border-2 rounded-xl p-2.5 sm:p-3 focus:outline-none w-full" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="text" v-model="newStudent.classRoom" list="class-list" placeholder="ห้องเรียน (เช่น ม.1/1)" class="border-2 rounded-xl p-2.5 sm:p-3 focus:outline-none w-full" :style="{ borderColor: settings.themeColor + '40' }">
                                     <datalist id="class-list">
                                         <option v-for="c in uniqueClasses" :key="c" :value="c"></option>
                                     </datalist>
-                                    <input type="text" v-model="newStudent.password" placeholder="รหัสผ่าน (เว้นว่างใช้ส่วนกลาง)" class="border-2 rounded-xl p-3 focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="text" v-model="newStudent.password" placeholder="รหัสผ่าน (เว้นว่างใช้ส่วนกลาง)" class="border-2 rounded-xl p-2.5 sm:p-3 focus:outline-none w-full" :style="{ borderColor: settings.themeColor + '40' }">
                                 </div>
-                                <button @click="addStudent" class="px-6 py-3 text-white font-bold rounded-xl shadow-md transition-transform hover:scale-105" :style="{ backgroundColor: settings.themeColor }">
+                                <button @click="addStudent" class="w-full sm:w-auto px-6 py-3 text-white font-bold rounded-xl shadow-md transition-transform hover:scale-105 flex items-center justify-center gap-2" :style="{ backgroundColor: settings.themeColor }">
                                     ➕ เพิ่มรายชื่อ
                                 </button>
                             </div>
 
-                            <div class="bg-white p-6 rounded-2xl border-4 overflow-hidden flex flex-col" :style="{ borderColor: settings.themeColor + '20' }">
+                            <div class="bg-white p-3 sm:p-6 rounded-2xl border-4 overflow-hidden flex flex-col" :style="{ borderColor: settings.themeColor + '20' }">
                                 <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
-                                    <h3 class="text-xl font-bold" :style="{ color: settings.themeColor }">รายชื่อนักเรียน ({{ filteredStudentsForManagement.length }} คน)</h3>
+                                    <h3 class="text-lg sm:text-xl font-bold" :style="{ color: settings.themeColor }">รายชื่อนักเรียน ({{ filteredStudentsForManagement.length }} คน)</h3>
                                     <!-- ปุ่มลบหลายคน และ Search Box -->
-                                    <div class="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
-                                        <button v-if="selectedStudents.length > 0" @click="deleteSelectedStudents" class="w-full md:w-auto px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-bold shadow hover:bg-red-600 transition-colors animate-pulse border-2 border-red-600">
+                                    <div class="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+                                        <button v-if="selectedStudents.length > 0" @click="deleteSelectedStudents" class="w-full sm:w-auto px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-bold shadow hover:bg-red-600 transition-colors animate-pulse border-2 border-red-600">
                                             🗑️ ลบที่เลือก ({{selectedStudents.length}})
                                         </button>
-                                        <div class="relative w-full md:w-64">
+                                        <div class="relative w-full sm:w-64">
                                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
                                             <input type="text" v-model="studentSearch" placeholder="ค้นหาชื่อ, รหัส, ห้อง..." class="w-full pl-9 pr-4 py-2 rounded-xl border-2 focus:outline-none text-sm font-bold bg-gray-50 focus:bg-white transition-colors" :style="{ borderColor: settings.themeColor + '40' }">
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="overflow-x-auto max-h-[500px]">
-                                    <table class="w-full text-left border-collapse">
+                                <div class="w-full overflow-x-auto max-h-[500px]">
+                                    <table class="w-full text-left border-collapse min-w-[800px]">
                                         <thead class="sticky top-0 bg-gray-100 z-10 shadow-sm">
                                             <tr>
                                                 <th class="p-3 rounded-tl-xl text-center w-10">
@@ -806,12 +812,45 @@
 
                         <!-- 2.4 TAB: Settings -->
                         <div v-if="currentAdminTab === 'settings'" class="space-y-6 fade-enter-active">
-                            <div class="bg-white p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
+                            <div class="bg-white p-4 sm:p-6 rounded-2xl border-4" :style="{ borderColor: settings.themeColor + '20' }">
                                 <h3 class="text-xl font-bold mb-4" :style="{ color: settings.themeColor }">ตั้งค่าระบบ</h3>
                                 
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
                                     <div class="space-y-4">
-                                        <h4 class="font-bold text-lg border-b pb-2">ระบบและการเข้าสู่ระบบ</h4>
+                                        <h4 class="font-bold text-base sm:text-lg border-b pb-2">ระบบและการเข้าสู่ระบบ</h4>
+                                        
+                                        <div>
+                                            <label class="block font-bold text-gray-700 mb-2">ชื่อชุมนุม / ชื่อแอปพลิเคชัน</label>
+                                            <input type="text" v-model="settings.clubName" placeholder="เช่น ชุมนุมการบ้านคณิตติดเพื่อน" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                        </div>
+
+                                        <div>
+                                            <label class="block font-bold text-gray-700 mb-2">สีธีมหลัก (Theme Color)</label>
+                                            <div class="flex items-center gap-4">
+                                                <input type="color" v-model="settings.themeColor" class="w-12 h-12 sm:w-16 sm:h-16 rounded cursor-pointer border-0 p-0">
+                                                <span class="text-gray-500 font-mono text-sm sm:text-base">{{ settings.themeColor }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block font-bold text-gray-700 mb-2">รหัสผ่านแอดมิน (คุณครู)</label>
+                                            <input type="text" v-model="settings.adminPassword" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                        </div>
+
+                                        <div class="p-3 sm:p-4 bg-green-50 rounded-xl border-2 border-green-200 shadow-sm mt-4">
+                                            <h5 class="font-bold text-green-800 mb-2 flex items-center gap-2 text-sm sm:text-base"><span>☁️</span> ระบบออนไลน์เต็มรูปแบบ 100%</h5>
+                                            <p class="text-xs sm:text-sm text-green-700 leading-relaxed font-medium">ข้อมูลรายชื่อนักเรียน การเช็คชื่อ การบ้าน การตั้งค่า และรูปภาพ จะถูกซิงค์และบันทึกลง Google Sheets ออนไลน์แบบเรียลไทม์โดยอัตโนมัติ (ไม่จำเป็นต้องกดบันทึกคลาวด์เอง ข้อมูลตรงกันทุกเครื่องแน่นอนจ้า) ✨</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block font-bold text-gray-700 mb-2">รหัสผ่านนักเรียน (ส่วนกลาง)</label>
+                                            <input type="text" v-model="settings.studentPassword" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                            <p class="text-xs text-gray-500 mt-1">* หากนักเรียนคนไหนไม่มีรหัสผ่านเฉพาะตัว จะใช้รหัสนี้แทน</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-4">
+                                        <h4 class="font-bold text-base sm:text-lg border-b pb-2">ตกแต่งแอปพลิเคชัน (ต้องใส่ Web App URL ก่อนอัปโหลด)</h4>
                                         
                                         <div>
                                             <label class="block font-bold text-gray-700 mb-2">ชื่อชุมนุม / ชื่อแอปพลิเคชัน</label>
@@ -892,8 +931,8 @@
                                         </div>
                                     </div>
                                 </div>
-                                <hr class="my-6">
-                                <button @click="saveSettings" class="w-full py-4 text-white font-bold rounded-2xl shadow-lg transition-transform hover:scale-105" :style="{ backgroundColor: settings.themeColor }">
+                                <hr class="my-4 sm:my-6">
+                                <button @click="saveSettings" class="w-full py-3 sm:py-4 text-white font-bold rounded-2xl shadow-lg transition-transform hover:scale-105 flex justify-center items-center gap-2" :style="{ backgroundColor: settings.themeColor }">
                                     💾 บันทึกการตั้งค่า
                                 </button>
                             </div>
@@ -904,64 +943,64 @@
 
                 <!-- 3. STUDENT DASHBOARD -->
                 <transition name="slide-up">
-                    <div v-if="user && user.role === 'student' && !isLoading" class="flex-1 flex flex-col w-full space-y-6">
+                    <div v-if="user && user.role === 'student' && !isLoading" class="flex-1 flex flex-col w-full space-y-4 sm:space-y-6">
                         
-                        <div class="bg-white p-6 rounded-3xl border-4 flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm relative overflow-hidden" :style="{ borderColor: settings.themeColor + '20' }">
-                            <div class="flex items-center gap-4 relative z-10">
-                                <div class="w-16 h-16 rounded-full border-4 shadow-md bg-white overflow-hidden cursor-pointer hover:scale-105 transition-transform" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = user">
+                        <div class="bg-white p-4 sm:p-6 rounded-3xl border-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4 shadow-sm relative overflow-hidden" :style="{ borderColor: settings.themeColor + '20' }">
+                            <div class="flex items-center gap-3 sm:gap-4 relative z-10 w-full sm:w-auto">
+                                <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 shadow-md bg-white overflow-hidden cursor-pointer hover:scale-105 transition-transform shrink-0" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = user">
                                     <img v-if="user.profileUrl" :src="user.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-full h-full object-cover">
                                     <div v-else class="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">👧</div>
                                 </div>
-                                <div>
-                                    <h2 class="text-2xl font-bold" :style="{ color: settings.themeColor }">สวัสดีจ้า! {{ user.name }} ✌️</h2>
-                                    <p class="text-gray-500 font-medium">วันนี้มีการบ้านอะไรบ้าง เอ่ยมาเลย!</p>
+                                <div class="flex-1 min-w-0">
+                                    <h2 class="text-xl sm:text-2xl font-bold truncate" :style="{ color: settings.themeColor }">สวัสดีจ้า! {{ user.name }} ✌️</h2>
+                                    <p class="text-xs sm:text-sm text-gray-500 font-medium truncate">วันนี้มีการบ้านอะไรบ้าง เอ่ยมาเลย!</p>
                                 </div>
                             </div>
-                            <div class="text-center bg-gray-50 p-4 rounded-xl border relative z-10 shadow-sm">
-                                <p class="text-sm text-gray-500 font-bold mb-1">สถานะมาเรียนวันนี้</p>
-                                <span class="px-4 py-1 rounded-full text-white font-bold text-sm shadow-inner" :style="{ backgroundColor: getStudentTodayStatus().color }">
+                            <div class="text-center sm:text-right bg-gray-50 p-3 sm:p-4 rounded-xl border relative z-10 shadow-sm w-full sm:w-auto">
+                                <p class="text-xs sm:text-sm text-gray-500 font-bold mb-1 sm:mb-2">สถานะมาเรียนวันนี้</p>
+                                <span class="px-4 py-1 sm:py-1.5 rounded-full text-white font-bold text-xs sm:text-sm shadow-inner inline-block" :style="{ backgroundColor: getStudentTodayStatus().color }">
                                     {{ getStudentTodayStatus().label }}
                                 </span>
                             </div>
                         </div>
 
                         <!-- เพิ่มการบ้าน -->
-                        <div class="bg-white p-6 rounded-3xl border-4 shadow-sm" :style="{ borderColor: settings.themeColor + '20' }">
-                            <h3 class="font-bold text-lg mb-4 text-gray-700 flex items-center gap-2">📝 จดการบ้านใหม่</h3>
-                            <form @submit.prevent="addTask" class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                                <div class="md:col-span-3">
+                        <div class="bg-white p-4 sm:p-6 rounded-3xl border-4 shadow-sm" :style="{ borderColor: settings.themeColor + '20' }">
+                            <h3 class="font-bold text-base sm:text-lg mb-4 text-gray-700 flex items-center gap-2">📝 จดการบ้านใหม่</h3>
+                            <form @submit.prevent="addTask" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4">
+                                <div class="col-span-1 sm:col-span-1 md:col-span-3">
                                     <label class="block text-xs font-bold text-gray-500 mb-1">วันที่สั่ง</label>
-                                    <input type="date" v-model="newTask.date" required class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="date" v-model="newTask.date" required class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                 </div>
-                                <div class="md:col-span-3">
+                                <div class="col-span-1 sm:col-span-1 md:col-span-3">
                                     <label class="block text-xs font-bold text-gray-500 mb-1">กำหนดส่ง (ถ้ามี)</label>
-                                    <input type="date" v-model="newTask.dueDate" class="w-full p-3 border-2 rounded-xl focus:outline-none bg-gray-50" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="date" v-model="newTask.dueDate" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none bg-gray-50" :style="{ borderColor: settings.themeColor + '40' }">
                                 </div>
-                                <div class="md:col-span-6">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-6">
                                     <label class="block text-xs font-bold text-gray-500 mb-1">วิชา</label>
-                                    <input type="text" v-model="newTask.subject" list="subject-list" required placeholder="เช่น คณิตศาสตร์" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="text" v-model="newTask.subject" list="subject-list" required placeholder="เช่น คณิตศาสตร์" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                     <datalist id="subject-list">
                                         <option v-for="sub in allSubjects" :key="sub" :value="sub"></option>
                                     </datalist>
                                 </div>
-                                <div class="md:col-span-12">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-12">
                                     <label class="block text-xs font-bold text-gray-500 mb-1">รายละเอียดงาน</label>
-                                    <input type="text" v-model="newTask.detail" list="detail-list" required placeholder="เช่น ทำแบบฝึกหัดหน้า 15" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <input type="text" v-model="newTask.detail" list="detail-list" required placeholder="เช่น ทำแบบฝึกหัดหน้า 15" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                     <datalist id="detail-list">
                                         <option v-for="det in allDetails" :key="det" :value="det"></option>
                                     </datalist>
                                 </div>
-                                <div class="md:col-span-12">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-12">
                                     <label class="block text-xs font-bold text-gray-500 mb-1">แนบรูปภาพ (ไม่บังคับ)</label>
                                     <input type="file" id="taskFileInput" @change="onFileChange" accept="image/*" class="w-full p-2 border-2 rounded-xl focus:outline-none bg-gray-50 text-sm" :style="{ borderColor: settings.themeColor + '40' }">
                                     <!-- เพิ่มส่วนพรีวิวรูปภาพก่อนบันทึก -->
                                     <div v-if="pendingImageUrl" class="mt-3 relative inline-block">
-                                        <img :src="pendingImageUrl" class="w-32 h-32 object-cover rounded-xl border-2 shadow-sm" :style="{ borderColor: settings.themeColor }">
+                                        <img :src="pendingImageUrl" class="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-xl border-2 shadow-sm" :style="{ borderColor: settings.themeColor }">
                                         <button type="button" @click="removePendingFile" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md hover:bg-red-600">X</button>
                                     </div>
                                 </div>
-                                <div class="md:col-span-12 flex justify-end mt-2">
-                                    <button type="submit" :disabled="isUploading" class="px-8 py-3 text-white font-bold rounded-xl shadow-md hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100" :style="{ backgroundColor: settings.themeColor }">
+                                <div class="col-span-1 sm:col-span-2 md:col-span-12 flex justify-end mt-2">
+                                    <button type="submit" :disabled="isUploading" class="w-full sm:w-auto px-8 py-3 text-white font-bold rounded-xl shadow-md hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2" :style="{ backgroundColor: settings.themeColor }">
                                         บันทึกการบ้าน
                                     </button>
                                 </div>
@@ -969,35 +1008,35 @@
                         </div>
 
                         <!-- รายการการบ้าน -->
-                        <div class="bg-white p-6 rounded-3xl border-4 flex-1 shadow-sm overflow-hidden flex flex-col" :style="{ borderColor: settings.themeColor + '20' }">
-                            <h3 class="font-bold text-lg mb-4 text-gray-700 flex items-center gap-2">📚 การบ้านของฉัน</h3>
+                        <div class="bg-white p-4 sm:p-6 rounded-3xl border-4 flex-1 shadow-sm overflow-hidden flex flex-col" :style="{ borderColor: settings.themeColor + '20' }">
+                            <h3 class="font-bold text-base sm:text-lg mb-4 text-gray-700 flex items-center gap-2">📚 การบ้านของฉัน</h3>
                             
                             <div v-if="myTasks.length === 0" class="flex-1 flex flex-col items-center justify-center py-10 opacity-60">
-                                <span class="text-6xl mb-4">✨</span>
-                                <p class="font-bold text-gray-500">เย้! ไม่มีการบ้านค้างอยู่เลย</p>
+                                <span class="text-5xl sm:text-6xl mb-4">✨</span>
+                                <p class="font-bold text-gray-500 text-sm sm:text-base">เย้! ไม่มีการบ้านค้างอยู่เลย</p>
                             </div>
                             
-                            <div v-else class="space-y-3 overflow-y-auto max-h-[400px] pr-2">
-                                <div v-for="task in myTasks" :key="task.id" class="flex flex-col md:flex-row justify-between md:items-center p-4 rounded-2xl border-2 transition-all hover:bg-gray-50" :style="{ borderColor: task.isCompleted ? '#10b98140' : settings.themeColor + '40' }">
-                                    <div class="mb-3 md:mb-0">
-                                        <div class="flex items-center flex-wrap gap-2 mb-1">
-                                            <span class="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">สั่ง: {{ task.date }}</span>
-                                            <span v-if="task.dueDate" class="text-xs font-bold px-2 py-1 bg-red-100 rounded text-red-600">ส่ง: {{ task.dueDate }}</span>
-                                            <span class="font-bold text-gray-800">{{ task.subject }}</span>
+                            <div v-else class="space-y-3 overflow-y-auto max-h-[400px] pr-1 sm:pr-2">
+                                <div v-for="task in myTasks" :key="task.id" class="flex flex-col sm:flex-row justify-between sm:items-center p-3 sm:p-4 rounded-2xl border-2 transition-all hover:bg-gray-50 gap-3 sm:gap-4" :style="{ borderColor: task.isCompleted ? '#10b98140' : settings.themeColor + '40' }">
+                                    <div class="flex-1 w-full">
+                                        <div class="flex items-center flex-wrap gap-2 mb-1 sm:mb-2">
+                                            <span class="text-[10px] sm:text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600 whitespace-nowrap">สั่ง: {{ task.date }}</span>
+                                            <span v-if="task.dueDate" class="text-[10px] sm:text-xs font-bold px-2 py-1 bg-red-100 rounded text-red-600 whitespace-nowrap">ส่ง: {{ task.dueDate }}</span>
+                                            <span class="font-bold text-gray-800 text-sm sm:text-base">{{ task.subject }}</span>
                                         </div>
-                                        <p class="text-gray-600">{{ task.detail }}</p>
+                                        <p class="text-sm sm:text-base text-gray-600">{{ task.detail }}</p>
                                         <div v-if="task.imageUrl || localImageMap[task.id]" class="mt-3">
                                             <a :href="localImageMap[task.id] || task.imageUrl" target="_blank" class="inline-block" title="คลิกเพื่อดูรูปขนาดเต็ม">
-                                                <img :src="localImageMap[task.id] || task.imageUrl" class="w-32 h-32 md:w-48 md:h-48 object-cover rounded-2xl border-2 hover:scale-105 transition-transform shadow-md" :style="{ borderColor: settings.themeColor + '40' }" alt="รูปการบ้าน">
+                                                <img :src="localImageMap[task.id] || task.imageUrl" class="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 object-cover rounded-2xl border-2 hover:scale-105 transition-transform shadow-md" :style="{ borderColor: settings.themeColor + '40' }" alt="รูปการบ้าน">
                                             </a>
                                         </div>
                                     </div>
-                                    <div class="flex gap-2 items-start mt-2 md:mt-0">
-                                        <button @click="toggleTaskStatus(task.id)" class="px-4 py-2 rounded-xl font-bold text-white shadow-sm flex-1 md:flex-none text-center transition-transform hover:scale-105" 
+                                    <div class="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
+                                        <button @click="toggleTaskStatus(task.id)" class="px-4 py-2.5 sm:py-2 rounded-xl font-bold text-white shadow-sm flex-1 sm:flex-none text-center transition-transform hover:scale-105 text-sm sm:text-base" 
                                             :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
                                             {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ ยังไม่เสร็จ' }}
                                         </button>
-                                        <button @click="deleteTask(task.id)" class="px-3 py-2 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors font-bold">
+                                        <button @click="deleteTask(task.id)" class="px-3 py-2.5 sm:py-2 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors font-bold text-sm sm:text-base text-center">
                                             ลบ
                                         </button>
                                     </div>
