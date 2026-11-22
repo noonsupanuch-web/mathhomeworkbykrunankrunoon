@@ -93,6 +93,10 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
+        
+        /* ซ่อน Scrollbar สำหรับเมนูที่เลื่อนปัดซ้ายขวาได้บนมือถือ */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="transition-all duration-500 min-h-screen relative" id="app-container">
@@ -260,15 +264,15 @@
                                         </div>
                                     </div>
 
-                                    <div class="flex flex-row sm:flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                                    <div class="flex flex-row sm:flex-col gap-2 w-full sm:w-auto mt-3 sm:mt-0">
                                         <!-- แอดมินและเจ้าตัวกดเปลี่ยนสถานะได้ -->
                                         <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="toggleTaskStatus(task.id)" 
                                                 :disabled="isTodayLocked && user.role !== 'admin'"
-                                                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm transition-transform hover:scale-105 text-center disabled:opacity-50 disabled:cursor-not-allowed" 
+                                                class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold text-white shadow-sm transition-transform hover:scale-105 text-center disabled:opacity-50 disabled:cursor-not-allowed" 
                                                 :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
                                             {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ รอส่งงาน' }}
                                         </button>
-                                        <span v-else class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm text-center" 
+                                        <span v-else class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold text-white shadow-sm text-center" 
                                               :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
                                             {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ รอส่งงาน' }}
                                         </span>
@@ -276,7 +280,7 @@
                                         <!-- แอดมินสามารถลบงานขยะทิ้งได้ -->
                                         <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="deleteTask(task.id)" 
                                                 :disabled="isTodayLocked && user.role !== 'admin'"
-                                                class="flex-1 sm:flex-none px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 border border-red-200 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed">
+                                                class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 bg-red-50 text-red-600 rounded-xl text-xs sm:text-sm font-bold hover:bg-red-100 border border-red-200 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed">
                                             🗑️ ลบงาน
                                         </button>
                                     </div>
@@ -335,11 +339,11 @@
         <div class="w-full max-w-5xl glass-panel rounded-[2rem] md:rounded-[3rem] cute-shadow overflow-hidden border-[4px] md:border-[6px] relative z-30 flex flex-col min-h-[85vh] md:min-h-[600px] transition-colors duration-500" :style="{ borderColor: settings.themeColor + '60' }">
             
             <!-- Header -->
-            <div class="p-4 sm:p-6 md:p-8 text-center text-white relative shadow-sm" :style="{ background: `linear-gradient(135deg, ${settings.themeColor}, ${settings.themeColor}dd)` }">
-                <h1 class="text-xl sm:text-3xl md:text-5xl font-extrabold flex items-center justify-center flex-wrap gap-2 md:gap-3 drop-shadow-[0_4px_4px_rgba(0,0,0,0.15)] tracking-wide pr-12 md:pr-0">
-                    🌸 {{ settings.clubName || 'ชุมนุมการบ้านคณิตติดเพื่อน' }} 📚
+            <div class="py-4 sm:py-6 md:py-8 text-center text-white relative shadow-sm flex items-center justify-center min-h-[4.5rem] sm:min-h-[6rem]" :style="{ background: `linear-gradient(135deg, ${settings.themeColor}, ${settings.themeColor}dd)` }">
+                <h1 class="font-extrabold drop-shadow-[0_4px_4px_rgba(0,0,0,0.15)] tracking-wide flex items-center justify-center w-full px-16 sm:px-32 z-0" style="font-size: clamp(16px, 4vw, 32px);">
+                    <span class="text-center leading-tight">🌸 {{ settings.clubName || 'ชุมนุมการบ้านคณิตติดเพื่อน' }} 📚</span>
                 </h1>
-                <div class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2">
+                <div class="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 md:gap-2 z-10">
                     <span v-if="isOnlineSyncing" class="bg-green-400 text-white px-2 py-1 md:px-3 rounded-full text-[10px] md:text-xs font-bold animate-pulse shadow-sm hidden sm:inline-block">
                         ☁️ ออนไลน์
                     </span>
@@ -366,10 +370,10 @@
                         
                         <div class="w-full flex justify-center mb-[-35px] sm:mb-[-45px] md:mb-[-60px] relative z-20 cute-float">
                             <img v-if="settings.loginBanner" :src="settings.loginBanner" alt="Login Banner" class="h-20 sm:h-28 md:h-36 object-contain drop-shadow-xl hover:scale-105 transition-transform" />
-                            <div v-else class="w-[85%] max-w-[400px] py-4 px-5 md:py-6 md:px-8 rounded-[1.5rem] md:rounded-[2rem] border-4 md:border-[6px] border-white shadow-xl flex items-center justify-center gap-2 md:gap-4 overflow-hidden" :style="{ backgroundColor: settings.themeColor }">
-                                <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐰</span>
-                                <span class="text-xl sm:text-2xl md:text-3xl text-white font-black drop-shadow-sm text-center tracking-wide whitespace-pre-line leading-tight">{{ settings.welcomeMessage || 'ยินดีต้อนรับ!' }}</span>
-                                <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐻</span>
+                            <div v-else class="w-auto max-w-[95%] px-6 py-4 md:px-10 md:py-5 rounded-full border-4 md:border-[6px] border-white shadow-xl flex items-center justify-center gap-3 sm:gap-4 shrink-0" :style="{ backgroundColor: settings.themeColor }">
+                                <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default shrink-0">🐰</span>
+                                <span class="text-lg sm:text-2xl md:text-3xl text-white font-black drop-shadow-sm text-center tracking-wide whitespace-nowrap">{{ settings.welcomeMessage || 'ยินดีต้อนรับ!' }}</span>
+                                <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default shrink-0">🐻</span>
                             </div>
                         </div>
 
@@ -446,10 +450,10 @@
                 <transition name="slide-up">
                     <div v-if="user && user.role === 'admin' && !isLoading" class="flex-1 flex flex-col w-full">
                         
-                        <!-- Tabs -->
-                        <div class="flex flex-wrap gap-2 mb-4 md:mb-6 border-b-2 pb-3 md:pb-4 justify-center sm:justify-start" :style="{ borderColor: settings.themeColor + '20' }">
+                        <!-- Tabs (ปัดเลื่อนซ้ายขวาได้บนมือถือ) -->
+                        <div class="flex overflow-x-auto sm:flex-wrap hide-scrollbar gap-2 mb-4 md:mb-6 border-b-2 pb-3 md:pb-4 justify-start sm:justify-start" :style="{ borderColor: settings.themeColor + '20' }">
                             <button v-for="tab in adminTabs" :key="tab.id" @click="currentAdminTab = tab.id"
-                                class="flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-5 sm:py-3 rounded-full font-bold transition-all text-xs sm:text-sm md:text-base flex-1 sm:flex-none justify-center whitespace-nowrap"
+                                class="flex items-center gap-1 sm:gap-2 px-4 py-2 sm:px-5 sm:py-3 rounded-full font-bold transition-all text-sm md:text-base shrink-0 sm:shrink justify-center whitespace-nowrap"
                                 :class="currentAdminTab === tab.id ? 'text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
                                 :style="currentAdminTab === tab.id ? { backgroundColor: settings.themeColor } : {}">
                                 {{ tab.icon }} {{ tab.label }}
@@ -531,6 +535,7 @@
                                         <div class="text-center md:text-right whitespace-nowrap w-full md:w-auto">
                                             <span v-if="checkedCount === filteredStudentsForReport.length && filteredStudentsForReport.length > 0" class="text-sm font-bold text-green-700 bg-green-100 px-4 py-2 rounded-full border border-green-300 shadow-sm block sm:inline-block">✨ เช็คครบทุกคนแล้ว</span>
                                             <span v-else-if="checkedCount > 0" class="text-sm font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-full border border-orange-300 shadow-sm block sm:inline-block">⏳ ยังเช็คไม่ครบ</span>
+                                            <span v-else class="text-sm font-bold text-red-600 bg-red-100 px-4 py-2 rounded-full border border-red-300 shadow-sm block sm:inline-block">⚠️ วันนี้ยังไม่มีการเช็คชื่อ</span>
                                         </div>
                                     </div>
                                     
@@ -558,25 +563,62 @@
                                     <div v-if="filteredStudentsForReport.length === 0" class="text-center py-10 text-gray-400 font-medium">ไม่พบรายชื่อนักเรียนจ้า</div>
                                     
                                     <!-- List of Students for Daily Attendance -->
-                                    <div v-for="std in filteredStudentsForReport" :key="std.id" class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-2xl border-2 transition-colors bg-white shadow-sm hover:bg-gray-50 gap-3 sm:gap-0" :style="{ borderColor: settings.themeColor + '40' }">
+                                    <div v-for="std in filteredStudentsForReport" :key="std.id" 
+                                         class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-2xl border-2 transition-all shadow-sm gap-3 sm:gap-0" 
+                                         :style="{ 
+                                             borderColor: getAttendanceStatusDisplay(std.id).status !== 'none' ? getAttendanceStatusDisplay(std.id).color : settings.themeColor + '40',
+                                             backgroundColor: getAttendanceStatusDisplay(std.id).bgColor
+                                         }">
                                         <div class="flex items-center gap-3 w-full sm:w-auto">
-                                            <img v-if="std.profileUrl" :src="std.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-12 h-12 rounded-full object-cover border-2 shadow-sm cursor-pointer hover:scale-110 transition-transform shrink-0" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">
-                                            <div v-else class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-xl border-2 cursor-pointer hover:scale-110 transition-transform shrink-0" :style="{ borderColor: settings.themeColor }" @click="viewingStudent = std">🧑</div>
+                                            <div class="relative shrink-0">
+                                                <img v-if="std.profileUrl" :src="std.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-12 h-12 rounded-full object-cover border-2 shadow-sm cursor-pointer hover:scale-110 transition-transform" :style="{ borderColor: getAttendanceStatusDisplay(std.id).status !== 'none' ? getAttendanceStatusDisplay(std.id).color : settings.themeColor }" @click="viewingStudent = std">
+                                                <div v-else class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-xl border-2 cursor-pointer hover:scale-110 transition-transform" :style="{ borderColor: getAttendanceStatusDisplay(std.id).status !== 'none' ? getAttendanceStatusDisplay(std.id).color : settings.themeColor }" @click="viewingStudent = std">🧑</div>
+                                                <span v-if="getAttendanceStatusDisplay(std.id).status !== 'none'" class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full text-[10px] flex items-center justify-center text-white font-bold shadow border border-white" :style="{ backgroundColor: getAttendanceStatusDisplay(std.id).color }">✓</span>
+                                            </div>
                                             <div class="flex-1 min-w-0">
-                                                <div class="font-bold text-base sm:text-lg text-gray-700 cursor-pointer hover:text-blue-600 transition-colors truncate" @click="viewingStudent = std">{{ std.name }}</div>
-                                                <div class="text-xs sm:text-sm font-normal text-gray-500 truncate">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <span class="font-bold text-base sm:text-lg text-gray-800 cursor-pointer hover:text-blue-600 transition-colors truncate" @click="viewingStudent = std">{{ std.name }}</span>
+                                                    <!-- ป้ายแจ้งเตือนสถานะของแต่ละคน -->
+                                                    <span v-if="getAttendanceStatusDisplay(std.id).status !== 'none'" 
+                                                          class="text-xs font-extrabold px-2.5 py-0.5 rounded-full text-white shadow-sm"
+                                                          :style="{ backgroundColor: getAttendanceStatusDisplay(std.id).color }">
+                                                        {{ getAttendanceStatusDisplay(std.id).badge }}
+                                                    </span>
+                                                    <span v-else class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                                                        ⚪ ยังไม่ได้เช็ค
+                                                    </span>
+                                                </div>
+                                                <div class="text-xs sm:text-sm font-normal text-gray-600 truncate mt-0.5">
                                                     {{ std.fullname || '-' }} 
                                                     <span v-if="std.classRoom">| ชั้น: {{ std.classRoom }}</span>
                                                     <span v-if="std.studentNo" class="hidden sm:inline">| เลขที่: {{ std.studentNo }}</span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <!-- ปุ่ม 3 สถานะ (มา, ขาด, ลา) -->
-                                        <button @click="toggleAttendance(std.id)" :disabled="isAttendanceLocked"
-                                                class="w-full sm:w-auto px-6 py-2.5 sm:py-2 rounded-xl font-bold text-white transition-transform hover:scale-105 shadow-md sm:min-w-[120px] text-center disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
-                                                :style="{ backgroundColor: getAttendanceStatusDisplay(std.id).color }">
-                                            {{ getAttendanceStatusDisplay(std.id).label }}
-                                        </button>
+                                        
+                                        <!-- ปุ่มกดเช็คชื่อ แยก 4 สถานะชัดเจน ป้องกันการกดผิดและไม่ให้กดซ้ำ -->
+                                        <div class="grid grid-cols-4 sm:flex sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+                                            <button @click="setAttendanceStatus(std.id, 'present')" :disabled="isAttendanceLocked"
+                                                    class="w-full sm:w-auto px-1 py-2 sm:px-3 rounded-lg font-bold text-xs sm:text-sm transition-all shadow-sm border-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    :class="getAttendanceStatusDisplay(std.id).status === 'present' ? 'bg-green-500 text-white border-green-500 scale-105 shadow-md' : 'bg-white text-green-600 border-green-200 hover:bg-green-50'">
+                                                มา
+                                            </button>
+                                            <button @click="setAttendanceStatus(std.id, 'activity')" :disabled="isAttendanceLocked"
+                                                    class="w-full sm:w-auto px-1 py-2 sm:px-3 rounded-lg font-bold text-xs sm:text-sm transition-all shadow-sm border-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    :class="getAttendanceStatusDisplay(std.id).status === 'activity' ? 'bg-purple-500 text-white border-purple-500 scale-105 shadow-md' : 'bg-white text-purple-600 border-purple-200 hover:bg-purple-50'">
+                                                กิจ
+                                            </button>
+                                            <button @click="setAttendanceStatus(std.id, 'leave')" :disabled="isAttendanceLocked"
+                                                    class="w-full sm:w-auto px-1 py-2 sm:px-3 rounded-lg font-bold text-xs sm:text-sm transition-all shadow-sm border-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    :class="getAttendanceStatusDisplay(std.id).status === 'leave' ? 'bg-yellow-500 text-white border-yellow-500 scale-105 shadow-md' : 'bg-white text-yellow-600 border-yellow-200 hover:bg-yellow-50'">
+                                                ลา
+                                            </button>
+                                            <button @click="setAttendanceStatus(std.id, 'absent')" :disabled="isAttendanceLocked"
+                                                    class="w-full sm:w-auto px-1 py-2 sm:px-3 rounded-lg font-bold text-xs sm:text-sm transition-all shadow-sm border-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    :class="getAttendanceStatusDisplay(std.id).status === 'absent' ? 'bg-red-500 text-white border-red-500 scale-105 shadow-md' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'">
+                                                ขาด
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1044,12 +1086,12 @@
                                             </a>
                                         </div>
                                     </div>
-                                    <div class="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
-                                        <button @click="toggleTaskStatus(task.id)" :disabled="isTodayLocked" class="px-4 py-2.5 sm:py-2 rounded-xl font-bold text-white shadow-sm flex-1 sm:flex-none text-center transition-transform hover:scale-105 text-sm sm:text-base disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed" 
+                                    <div class="flex flex-row sm:flex-col gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+                                        <button @click="toggleTaskStatus(task.id)" :disabled="isTodayLocked" class="px-3 py-2 sm:px-4 sm:py-2 rounded-xl font-bold text-white shadow-sm flex-1 sm:flex-none text-center transition-transform hover:scale-105 text-xs sm:text-sm disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed" 
                                             :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
                                             {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ ยังไม่เสร็จ' }}
                                         </button>
-                                        <button @click="deleteTask(task.id)" :disabled="isTodayLocked" class="px-3 py-2.5 sm:py-2 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors font-bold text-sm sm:text-base text-center disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <button @click="deleteTask(task.id)" :disabled="isTodayLocked" class="px-3 py-2 sm:px-4 sm:py-2 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors font-bold text-xs sm:text-sm text-center flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed">
                                             ลบ
                                         </button>
                                     </div>
@@ -1485,12 +1527,52 @@
                 // Methods - Admin Attendance
                 const getAttendanceStatusDisplay = (stdId) => {
                     const record = attendance.value.find(a => a.studentId === stdId && a.date === attendanceDate.value);
-                    if (!record) return { label: 'ยังไม่เช็ค', color: '#9ca3af', status: 'none' };
-                    if (record.status === 'present') return { label: 'มาเรียน', color: '#10b981', status: 'present' };
-                    if (record.status === 'activity') return { label: 'กิจกรรม', color: '#8b5cf6', status: 'activity' };
-                    if (record.status === 'absent') return { label: 'ขาดเรียน', color: '#ef4444', status: 'absent' };
-                    if (record.status === 'leave') return { label: 'ลา', color: '#f59e0b', status: 'leave' };
-                    return { label: 'ยังไม่เช็ค', color: '#9ca3af', status: 'none' };
+                    if (!record) return { label: 'ยังไม่เช็ค', badge: 'ยังไม่เช็ค', color: '#9ca3af', bgColor: '#ffffff', status: 'none' };
+                    if (record.status === 'present') return { label: 'มาเรียน', badge: '✅ เช็คแล้ว: มาเรียน', color: '#10b981', bgColor: '#ecfdf5', status: 'present' };
+                    if (record.status === 'activity') return { label: 'กิจกรรม', badge: '🟣 เช็คแล้ว: กิจกรรม', color: '#8b5cf6', bgColor: '#f5f3ff', status: 'activity' };
+                    if (record.status === 'absent') return { label: 'ขาดเรียน', badge: '❌ เช็คแล้ว: ขาดเรียน', color: '#ef4444', bgColor: '#fef2f2', status: 'absent' };
+                    if (record.status === 'leave') return { label: 'ลา', badge: '🟡 เช็คแล้ว: ลา', color: '#f59e0b', bgColor: '#fffbeb', status: 'leave' };
+                    return { label: 'ยังไม่เช็ค', badge: 'ยังไม่เช็ค', color: '#9ca3af', bgColor: '#ffffff', status: 'none' };
+                };
+
+                const setAttendanceStatus = async (stdId, status) => {
+                    hasPendingChanges = true; // ล็อคระบบ Sync อัตโนมัติทันที
+                    const idx = attendance.value.findIndex(a => a.studentId === stdId && a.date === attendanceDate.value);
+                    
+                    if (idx > -1) {
+                        if (attendance.value[idx].status === status) {
+                            // หากกดปุ่มสถานะเดิมซ้ำ ระบบจะไม่ทำอะไร (ป้องกันการเผลอกดซ้ำแล้วข้อมูลหาย)
+                            // แต่ถ้ากดสถานะอื่น จะสามารถแก้ไขเปลี่ยนสถานะได้ตามปกติ
+                            return;
+                        } else {
+                            // เปลี่ยนเป็นสถานะใหม่
+                            attendance.value[idx].status = status;
+                        }
+                    } else {
+                        // บันทึกสถานะใหม่
+                        attendance.value.push({ studentId: stdId, date: attendanceDate.value, status: status });
+                    }
+                    
+                    // ยิงข้อมูลขึ้น Google Sheets ทันทีแบบไม่รอ (Non-blocking) ทำให้ UI ไม่ติดขัด กดได้รัวๆ
+                    saveDataToCloud(); 
+                };
+
+                const handleAttendanceClick = (std) => {
+                    const current = getAttendanceStatusDisplay(std.id);
+                    // หากคนนี้ถูกเช็คชื่อไปแล้ว ให้แจ้งเตือนก่อนแก้ไขเพื่อป้องกันการเผลอกดเช็คซ้ำที่รูปโปรไฟล์
+                    if (current.status !== 'none') {
+                        showModal(
+                            '⚠️ แจ้งเตือน: เช็คชื่อคนนี้ไปแล้ว',
+                            `วันที่ ${attendanceDate.value} น้อง "${std.name}" ถูกเช็คชื่อสถานะ "${current.label}" ไปแล้ว ต้องการเปลี่ยนสถานะใหม่หรือไม่?`,
+                            'confirm',
+                            async () => {
+                                closeModal();
+                                toggleAttendance(std.id);
+                            }
+                        );
+                    } else {
+                        toggleAttendance(std.id);
+                    }
                 };
 
                 const toggleAttendance = (stdId) => {
@@ -1512,6 +1594,8 @@
                             attendance.value.push({ studentId: stdId, date: attendanceDate.value, status: nextStatus });
                         }
                     }
+                    // บังคับเซฟขึ้นออนไลน์ทันที แบบพื้นหลัง
+                    saveDataToCloud(); 
                 };
 
                 const markAllPresent = () => {
@@ -1524,6 +1608,10 @@
                             attendance.value.push({ studentId: std.id, date: attendanceDate.value, status: 'present' });
                         }
                     });
+                    
+                    // บันทึกขึ้นคลาวด์ออนไลน์ทันทีแบบ Background
+                    clearTimeout(saveTimeout);
+                    saveDataToCloud();
                 };
 
                 const clearAllAttendance = () => {
@@ -2342,7 +2430,7 @@
                     studentSearch, viewingStudent, filteredStudentsForManagement, onProfilePicChange, cancelProfilePic, saveProfilePic, removeProfilePic, pendingProfileUrl,
                     selectedStudents, isAllStudentsSelected, toggleSelectAllStudents, deleteSelectedStudents,
                     showOnlineImport, onlineSheetUrl, importFromOnlineSheet, importStudentsFile, exportStudentsExcel,
-                    getAttendanceStatusDisplay, toggleAttendance, markAllPresent, clearDailyAttendance, clearAllAttendance, clearDisplayedAttendance, deleteAttendanceByDate, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
+                    getAttendanceStatusDisplay, handleAttendanceClick, toggleAttendance, markAllPresent, clearDailyAttendance, clearAllAttendance, clearDisplayedAttendance, deleteAttendanceByDate, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
                     dynamicAttendanceDates, getAttendanceMark,
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
