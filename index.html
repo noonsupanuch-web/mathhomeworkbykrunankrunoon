@@ -308,7 +308,7 @@
                         📅 สั่ง: {{ task.date }} &nbsp;&nbsp;|&nbsp;&nbsp; ⏰ กำหนดส่ง: {{ task.dueDate || '-' }}
                     </p>
                     <div v-if="task.imageUrl || localImageMap[task.id]" class="mt-2 text-center bg-gray-100 p-2 rounded">
-                        <img :src="localImageMap[task.id] || task.imageUrl" class="max-w-full h-auto max-h-[400px] object-contain mx-auto border shadow-sm" crossorigin="anonymous">
+                        <img :src="localImageMap[task.id] || task.imageUrl" class="max-w-full h-auto max-h-[400px] object-contain mx-auto border shadow-sm">
                     </div>
                 </div>
                 
@@ -649,9 +649,12 @@
                                         </div>
                                     </label>
                                     
-                                    <div class="ml-auto flex gap-2">
-                                        <button @click="exportExcelReport" class="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-bold shadow hover:bg-green-700 flex items-center gap-1">📤 ส่งออก Excel</button>
-                                        <button @click="printPage('report-content')" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm font-bold shadow hover:bg-gray-300">🖨️ พิมพ์</button>
+                                    <div class="ml-auto flex flex-wrap gap-2 justify-end">
+                                        <button @click="exportExcelReport" class="px-3 py-1.5 bg-green-600 text-white rounded text-sm font-bold shadow hover:bg-green-700 flex items-center gap-1 transition-transform hover:scale-105">📤 Excel</button>
+                                        <button @click="exportAdminReportDoc" class="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-bold shadow hover:bg-blue-700 flex items-center gap-1 transition-transform hover:scale-105">📄 Word</button>
+                                        <button @click="exportAdminReportPdf" class="px-3 py-1.5 bg-red-500 text-white rounded text-sm font-bold shadow hover:bg-red-600 flex items-center gap-1 transition-transform hover:scale-105">📕 PDF</button>
+                                        <button @click="exportAdminReportImage" class="px-3 py-1.5 bg-purple-500 text-white rounded text-sm font-bold shadow hover:bg-purple-600 flex items-center gap-1 transition-transform hover:scale-105">🖼️ รูปภาพ</button>
+                                        <button @click="printPage('report-content')" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm font-bold shadow hover:bg-gray-300 flex items-center gap-1 transition-transform hover:scale-105">🖨️ พิมพ์</button>
                                     </div>
                                 </div>
                             </div>
@@ -663,37 +666,39 @@
                                     <span v-if="reportMode === 'monthly'">ประจำเดือน {{ reportMonth }}</span>
                                 </h3>
                                 <div class="overflow-x-auto">
-                                    <table class="w-full text-left border-collapse border border-gray-300 text-sm min-w-[800px]">
+                                    <table class="w-full text-left border-collapse border border-gray-300 text-sm min-w-[1000px]">
                                         <thead>
                                             <tr class="bg-blue-600 text-white font-bold">
-                                                <th class="border border-blue-700 p-2 w-24">วันที่สั่ง</th>
-                                                <th class="border border-blue-700 p-2 w-20">รหัส</th>
+                                                <th class="border border-blue-700 p-2 w-24 text-center">วันที่สั่ง</th>
+                                                <th class="border border-blue-700 p-2 w-20 text-center">รหัส</th>
                                                 <th class="border border-blue-700 p-2">ชื่อ-สกุล</th>
-                                                <th class="border border-blue-700 p-2 w-20">ชั้น</th>
-                                                <th class="border border-blue-700 p-2">วิชา</th>
+                                                <th class="border border-blue-700 p-2 w-16 text-center">ชั้น</th>
+                                                <th class="border border-blue-700 p-2 w-32">วิชา</th>
                                                 <th class="border border-blue-700 p-2">รายละเอียดงาน</th>
                                                 <th class="border border-blue-700 p-2 text-center w-24">สถานะ</th>
-                                                <th class="border border-blue-700 p-2 text-center w-20">รูปแนบ</th>
+                                                <th class="border border-blue-700 p-2 text-center w-28">รูปแนบ</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="t in flatReportTasks" :key="t.id" class="hover:bg-blue-50 text-gray-700">
-                                                <td class="border border-gray-300 p-2">{{ t.date }}</td>
-                                                <td class="border border-gray-300 p-2 font-mono">{{ t.studentCode }}</td>
-                                                <td class="border border-gray-300 p-2">{{ t.studentName }}</td>
+                                            <tr v-for="t in flatReportTasks" :key="t.id" class="hover:bg-blue-50 text-gray-700 transition-colors">
+                                                <td class="border border-gray-300 p-2 text-center">{{ t.date }}</td>
+                                                <td class="border border-gray-300 p-2 text-center font-mono">{{ t.studentCode }}</td>
+                                                <td class="border border-gray-300 p-2 whitespace-nowrap">{{ t.studentName }}</td>
                                                 <td class="border border-gray-300 p-2 text-center">{{ t.studentClass }}</td>
                                                 <td class="border border-gray-300 p-2 font-bold">{{ t.subject }}</td>
                                                 <td class="border border-gray-300 p-2">{{ t.detail }}</td>
                                                 <td class="border border-gray-300 p-2 text-center font-bold" :class="t.isCompleted ? 'text-green-600' : 'text-orange-500'">
                                                     {{ t.isCompleted ? '✅ เสร็จ' : '⏳ รอส่ง' }}
                                                 </td>
-                                                <td class="border border-gray-300 p-2 text-center">
-                                                    <a v-if="t.imageUrl || localImageMap[t.id]" :href="localImageMap[t.id] || t.imageUrl" target="_blank" class="text-blue-500 underline hover:text-blue-700 font-bold">ดูรูป</a>
+                                                <td class="border border-gray-300 p-2 text-center align-middle">
+                                                    <a v-if="t.imageUrl || localImageMap[t.id]" :href="localImageMap[t.id] || t.imageUrl" target="_blank" class="inline-block" title="คลิกดูรูปเต็ม">
+                                                        <img :src="localImageMap[t.id] || t.imageUrl" class="h-12 w-auto max-w-[80px] object-cover rounded shadow-sm border mx-auto hover:scale-110 transition-transform">
+                                                    </a>
                                                     <span v-else class="text-gray-300">-</span>
                                                 </td>
                                             </tr>
                                             <tr v-if="flatReportTasks.length === 0">
-                                                <td colspan="8" class="border border-gray-300 p-6 text-gray-400 text-center font-bold">ไม่พบข้อมูลการบ้านในเงื่อนไขที่เลือกจ้า</td>
+                                                <td colspan="8" class="border border-gray-300 p-8 text-gray-400 text-center font-bold text-base">ไม่พบข้อมูลการบ้านในเงื่อนไขที่เลือกจ้า 🔍</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -1959,11 +1964,121 @@
                     XLSX.writeFile(wb, `รายงานการบ้าน_${reportMode.value}_${new Date().toISOString().split('T')[0]}.xlsx`);
                 };
 
+                // ฟังก์ชันช่วยโหลดรูปภาพทั้งหมดให้เสร็จก่อนที่จะสร้าง PDF/JPG (ป้องกันรูปหาย)
+                const waitForImagesToLoad = async (element) => {
+                    const images = element.querySelectorAll('img');
+                    const promises = Array.from(images).map(img => {
+                        if (img.complete) return Promise.resolve();
+                        return new Promise(resolve => {
+                            img.onload = resolve;
+                            img.onerror = resolve; // หากรูปเสียให้ข้ามไปเลย เพื่อไม่ให้ระบบค้าง
+                        });
+                    });
+                    await Promise.all(promises);
+                    // หน่วงเวลาเล็กน้อยให้ Browser วาดภาพลงจอให้เสร็จสมบูรณ์
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                };
+                
+                // =====================================
+                // ส่วนการส่งออกรายงานของแอดมิน (ตารางรวม)
+                // =====================================
+
+                const exportAdminReportDoc = () => {
+                    if (flatReportTasks.value.length === 0) return showModal('แจ้งเตือน', 'ไม่มีข้อมูลให้ส่งออกจ้า');
+                    
+                    let reportTitle = `รายงานการทำการบ้าน ` + (reportMode.value === 'daily' ? `ประจำวันที่ ${reportDate.value}` : (reportMode.value === 'monthly' ? `ประจำเดือน ${reportMonth.value}` : 'ทั้งหมด'));
+                    
+                    let html = `<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:m="http://schemas-microsoft.com/office/2004/12/omml" xmlns="http://www.w3.org/TR/REC-html40">
+                    <head><meta charset='utf-8'><title>${reportTitle}</title></head><body style="font-family: 'Sarabun', sans-serif;">`;
+                    
+                    html += `<h2 style="text-align:center;">${reportTitle}</h2><hr/><br/>`;
+                    html += `<table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;">`;
+                    html += `<tr style="background-color:#2563eb; color:white; font-weight:bold; text-align:center;">
+                                <th>วันที่สั่ง</th><th>รหัส</th><th>ชื่อ-สกุล</th><th>ชั้น</th><th>วิชา</th><th>รายละเอียดงาน</th><th>สถานะ</th><th>รูปแนบ</th>
+                             </tr>`;
+                    
+                    flatReportTasks.value.forEach(t => {
+                        let statusStr = t.isCompleted ? '<span style="color:green; font-weight:bold;">เสร็จ</span>' : '<span style="color:#d97706; font-weight:bold;">รอส่ง</span>';
+                        let imgStr = (t.imageUrl || localImageMap.value[t.id]) ? `<img src="${localImageMap.value[t.id] || t.imageUrl}" width="80" style="max-width:80px; height:auto; border:1px solid #ccc;" />` : '-';
+                        
+                        html += `<tr>`;
+                        html += `<td style="text-align:center;">${t.date}</td><td style="text-align:center;">${t.studentCode}</td><td>${t.studentName}</td><td style="text-align:center;">${t.studentClass}</td>`;
+                        html += `<td><strong>${t.subject}</strong></td><td>${t.detail}</td><td style="text-align:center;">${statusStr}</td><td style="text-align:center;">${imgStr}</td>`;
+                        html += `</tr>`;
+                    });
+                    
+                    html += `</table><br/><p style="text-align:right; font-size:12px; color:gray;">พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')}</p></body></html>`;
+
+                    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+                    const downloadLink = document.createElement("a");
+                    downloadLink.href = URL.createObjectURL(blob);
+                    downloadLink.download = `${reportTitle.replace(/ /g,'_')}.doc`;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                };
+
+                const exportAdminReportPdf = async () => {
+                    isUploading.value = true;
+                    try {
+                        const el = document.getElementById('report-content');
+                        await waitForImagesToLoad(el); // รอให้รูป Thumbnails โหลดเสร็จทั้งหมดก่อนแคป
+                        
+                        const canvas = await html2canvas(el, { 
+                            scale: 2, 
+                            useCORS: true, 
+                            allowTaint: false,
+                            backgroundColor: '#ffffff' 
+                        });
+                        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF('l', 'mm', 'a4'); // แนวนอน (Landscape) เพื่อให้ตารางไม่ตกขอบ
+                        const pdfWidth = pdf.internal.pageSize.getWidth() - 20; // เผื่อขอบหน้ากระดาษ
+                        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                        
+                        pdf.addImage(imgData, 'JPEG', 10, 10, pdfWidth, pdfHeight);
+                        pdf.save(`รายงานการบ้านรวม_${new Date().toISOString().split('T')[0]}.pdf`);
+                    } catch(e) {
+                        showModal('ข้อผิดพลาด', 'ไม่สามารถสร้าง PDF ได้: ' + e.message);
+                    } finally {
+                        isUploading.value = false;
+                    }
+                };
+
+                const exportAdminReportImage = async () => {
+                    isUploading.value = true;
+                    try {
+                        const el = document.getElementById('report-content');
+                        await waitForImagesToLoad(el); // รอภาพโหลดเสร็จ
+                        
+                        const canvas = await html2canvas(el, { 
+                            scale: 2, 
+                            useCORS: true, 
+                            allowTaint: false,
+                            backgroundColor: '#ffffff' 
+                        });
+                        const link = document.createElement('a');
+                        link.download = `รายงานการบ้านรวม_${new Date().toISOString().split('T')[0]}.jpg`;
+                        link.href = canvas.toDataURL('image/jpeg', 1.0);
+                        link.click();
+                    } catch(e) {
+                        showModal('ข้อผิดพลาด', 'ไม่สามารถสร้างรูปภาพได้: ' + e.message);
+                    } finally {
+                        isUploading.value = false;
+                    }
+                };
+
+                // =====================================
+                // ส่วนการส่งออกรายงานรายบุคคล (ของนักเรียน)
+                // =====================================
+
                 // ส่งออกการบ้านรายบุคคลเป็น Word
                 const exportStudentReportDoc = (student) => {
                     if(!student) return;
                     const studentTasks = getTasksForStudent(student.id);
-                    let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                    // ปรับโครงสร้าง XML ให้รองรับการอ่านรูปภาพใน Microsoft Word
+                    let html = `<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:m="http://schemas-microsoft.com/office/2004/12/omml" xmlns="http://www.w3.org/TR/REC-html40">
                     <head><meta charset='utf-8'><title>รายงานการทำการบ้าน</title></head><body style="font-family: 'Sarabun', sans-serif;">`;
                     
                     html += `<h2 style="text-align:center;">รายงานการทำการบ้าน ของ ${student.fullname || student.name} ${student.classRoom || ''} ${student.studentNo ? 'เลขที่ '+student.studentNo : ''}</h2><hr/>`;
@@ -1978,7 +2093,8 @@
                         html += `<p><strong>รายละเอียด:</strong> ${t.detail}</p>`;
                         html += `<p>สั่ง: ${t.date} &nbsp;&nbsp;&nbsp; กำหนดส่ง: ${t.dueDate || '-'} &nbsp;&nbsp;&nbsp; <strong>${t.isCompleted ? '<span style="color:green">ส่งงานเรียบร้อยแล้ว</span>' : '<span style="color:red">ยังไม่ส่งงาน</span>'}</strong></p>`;
                         if (t.imageUrl || localImageMap.value[t.id]) {
-                            html += `<br/><img src="${localImageMap.value[t.id] || t.imageUrl}" style="max-width: 500px; max-height: 400px;" />`;
+                            // จำกัดความกว้างของรูป เพื่อไม่ให้ล้นหน้ากระดาษ Word
+                            html += `<br/><img src="${localImageMap.value[t.id] || t.imageUrl}" width="400" style="margin-top: 10px; border: 1px solid #ccc; max-width: 100%;" />`;
                         }
                         html += `</div>`;
                     });
@@ -1999,8 +2115,15 @@
                     isUploading.value = true;
                     try {
                         const el = document.getElementById('export-student-report');
+                        await waitForImagesToLoad(el); // รอโหลดภาพก่อนสร้างไฟล์
+                        
                         // ใช้ html2canvas ดึงภาพจาก div ที่ซ่อนไว้
-                        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                        const canvas = await html2canvas(el, { 
+                            scale: 2, 
+                            useCORS: true, 
+                            allowTaint: false,
+                            backgroundColor: '#ffffff' 
+                        });
                         const imgData = canvas.toDataURL('image/jpeg', 1.0);
                         
                         const { jsPDF } = window.jspdf;
@@ -2023,7 +2146,14 @@
                     isUploading.value = true;
                     try {
                         const el = document.getElementById('export-student-report');
-                        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                        await waitForImagesToLoad(el); // รอโหลดภาพก่อนสร้างไฟล์
+                        
+                        const canvas = await html2canvas(el, { 
+                            scale: 2, 
+                            useCORS: true, 
+                            allowTaint: false,
+                            backgroundColor: '#ffffff' 
+                        });
                         const link = document.createElement('a');
                         link.download = `รายงานการบ้าน_${student.name}.jpg`;
                         link.href = canvas.toDataURL('image/jpeg', 1.0);
@@ -2082,6 +2212,7 @@
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
                     exportJpg, exportExcelAttendance, exportExcelReport, printPage,
+                    exportAdminReportDoc, exportAdminReportPdf, exportAdminReportImage,
                     exportStudentReportDoc, exportStudentReportPdf, exportStudentReportImage,
                     saveDataToCloud, loadDataFromCloud, isOnlineSyncing,
                     allSubjects, allDetails
