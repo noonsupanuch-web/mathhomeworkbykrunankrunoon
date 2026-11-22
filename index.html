@@ -128,19 +128,30 @@
                     
                     <div class="overflow-y-auto pr-2 flex-1">
                         <div class="w-24 h-24 md:w-32 md:h-32 mx-auto rounded-full border-4 shadow-md overflow-hidden mb-4 relative group bg-white shrink-0" :style="{ borderColor: settings.themeColor }">
-                            <img v-if="viewingStudent.profileUrl" :src="viewingStudent.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-full h-full object-cover">
+                            <img v-if="pendingProfileUrl" :src="pendingProfileUrl" class="w-full h-full object-cover">
+                            <img v-else-if="viewingStudent.profileUrl" :src="viewingStudent.profileUrl" @error="$event.target.src='https://placehold.co/150x150/f87171/ffffff?text=Error'" class="w-full h-full object-cover">
                             <div v-else class="w-full h-full bg-gray-50 flex items-center justify-center text-4xl md:text-5xl">👧👦</div>
                             
                             <!-- Upload overlay (เฉพาะ Admin หรือเจ้าของโปรไฟล์ถึงจะเปลี่ยนรูปได้) -->
-                            <label v-if="user && (user.role === 'admin' || user.id === viewingStudent.id)" class="absolute inset-0 bg-black/50 hidden group-hover:flex flex-col items-center justify-center cursor-pointer text-white font-bold text-sm transition-all">
+                            <label v-if="user && (user.role === 'admin' || user.id === viewingStudent.id) && !pendingProfileUrl" class="absolute inset-0 bg-black/50 hidden group-hover:flex flex-col items-center justify-center cursor-pointer text-white font-bold text-sm transition-all">
                                 <span>📷</span>
                                 <span>เปลี่ยนรูป</span>
-                                <input type="file" class="hidden" accept="image/*" @change="uploadProfilePic($event, viewingStudent)">
+                                <input type="file" class="hidden" accept="image/*" @change="onProfilePicChange">
                             </label>
                         </div>
                         
+                        <!-- ปุ่ม บันทึก/ยกเลิก รูปภาพใหม่ -->
+                        <div v-if="pendingProfileUrl" class="text-center mb-4 flex justify-center gap-2">
+                            <button @click="saveProfilePic(viewingStudent)" class="text-xs font-bold text-white bg-green-500 hover:bg-green-600 px-4 py-2 rounded-full shadow-sm transition-transform hover:scale-105" :disabled="isUploading">
+                                {{ isUploading ? '⏳ กำลังบันทึก...' : '💾 บันทึกรูปใหม่' }}
+                            </button>
+                            <button @click="cancelProfilePic" class="text-xs font-bold text-gray-600 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-full shadow-sm transition-transform hover:scale-105" :disabled="isUploading">
+                                ❌ ยกเลิก
+                            </button>
+                        </div>
+
                         <!-- ปุ่มลบรูปภาพโปรไฟล์ -->
-                        <div class="text-center mb-4" v-if="user && (user.role === 'admin' || user.id === viewingStudent.id) && viewingStudent.profileUrl">
+                        <div class="text-center mb-4" v-if="user && (user.role === 'admin' || user.id === viewingStudent.id) && viewingStudent.profileUrl && !pendingProfileUrl">
                             <button @click="removeProfilePic(viewingStudent)" class="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 px-4 py-1.5 rounded-full border border-red-200 shadow-sm transition-transform hover:scale-105">
                                 🗑️ ลบรูปโปรไฟล์ทิ้ง
                             </button>
@@ -252,7 +263,8 @@
                                     <div class="flex flex-row sm:flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                                         <!-- แอดมินและเจ้าตัวกดเปลี่ยนสถานะได้ -->
                                         <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="toggleTaskStatus(task.id)" 
-                                                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm transition-transform hover:scale-105 text-center" 
+                                                :disabled="isTodayLocked && user.role !== 'admin'"
+                                                class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm transition-transform hover:scale-105 text-center disabled:opacity-50 disabled:cursor-not-allowed" 
                                                 :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
                                             {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ รอส่งงาน' }}
                                         </button>
@@ -263,7 +275,8 @@
                                         
                                         <!-- แอดมินสามารถลบงานขยะทิ้งได้ -->
                                         <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="deleteTask(task.id)" 
-                                                class="flex-1 sm:flex-none px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 border border-red-200 transition-colors text-center">
+                                                :disabled="isTodayLocked && user.role !== 'admin'"
+                                                class="flex-1 sm:flex-none px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 border border-red-200 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed">
                                             🗑️ ลบงาน
                                         </button>
                                     </div>
@@ -355,7 +368,7 @@
                             <img v-if="settings.loginBanner" :src="settings.loginBanner" alt="Login Banner" class="h-20 sm:h-28 md:h-36 object-contain drop-shadow-xl hover:scale-105 transition-transform" />
                             <div v-else class="w-[85%] max-w-[400px] py-4 px-5 md:py-6 md:px-8 rounded-[1.5rem] md:rounded-[2rem] border-4 md:border-[6px] border-white shadow-xl flex items-center justify-center gap-2 md:gap-4 overflow-hidden" :style="{ backgroundColor: settings.themeColor }">
                                 <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐰</span>
-                                <span class="text-xl sm:text-2xl md:text-3xl text-white font-black drop-shadow-sm text-center tracking-wide">ต้อนรับ!</span>
+                                <span class="text-xl sm:text-2xl md:text-3xl text-white font-black drop-shadow-sm text-center tracking-wide whitespace-pre-line leading-tight">{{ settings.welcomeMessage || 'ยินดีต้อนรับ!' }}</span>
                                 <span class="text-3xl sm:text-4xl md:text-5xl drop-shadow-md hover:scale-110 transition-transform cursor-default">🐻</span>
                             </div>
                         </div>
@@ -521,18 +534,23 @@
                                         </div>
                                     </div>
                                     
+                                    <!-- แจ้งเตือนล็อควัน -->
+                                    <div v-if="isAttendanceLocked" class="bg-red-50 text-red-600 p-3 rounded-xl border border-red-200 mb-4 font-bold flex flex-col sm:flex-row items-center justify-center gap-2 text-sm sm:text-base">
+                                        <span class="text-xl">🔒</span> ระบบถูกล็อค! อนุญาตให้เช็คชื่อเฉพาะวันที่แอดมินกำหนดเท่านั้น (ปลดล็อคได้ที่เมนูตั้งค่า)
+                                    </div>
+
                                     <!-- เพิ่มปุ่ม มาเรียนทั้งหมด และ บันทึก -->
                                     <div v-if="filteredStudentsForReport.length > 0" class="flex flex-col sm:flex-row flex-wrap justify-end gap-2 mb-4 bg-gray-50 p-3 rounded-xl border" :style="{ borderColor: settings.themeColor + '20' }">
                                         <button @click="clearAllAttendance" class="w-full sm:w-auto sm:mr-auto px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-red-700 transition-colors flex items-center justify-center gap-1 hover:scale-105" title="รีเซตการเช็คชื่อทั้งหมด (ทุกวัน)">
                                             🚨 รีเซตทั้งหมด
                                         </button>
-                                        <button @click="clearDailyAttendance" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm font-bold shadow-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-1 hover:scale-105">
+                                        <button @click="clearDailyAttendance" :disabled="isAttendanceLocked" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm font-bold shadow-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-1 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed">
                                             🗑️ ล้างข้อมูลวันนี้
                                         </button>
-                                        <button @click="markAllPresent" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow-md hover:bg-green-600 transition-colors flex items-center justify-center gap-1 hover:scale-105">
+                                        <button @click="markAllPresent" :disabled="isAttendanceLocked" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-green-500 text-white rounded-xl text-sm font-bold shadow-md hover:bg-green-600 transition-colors flex items-center justify-center gap-1 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed">
                                             ✅ มาเรียนทุกคน
                                         </button>
-                                        <button @click="saveAttendance" class="w-full sm:w-auto px-6 py-2.5 sm:py-2 text-white rounded-xl text-sm font-bold shadow-md transition-transform hover:scale-105 flex items-center justify-center" :style="{ backgroundColor: settings.themeColor }">
+                                        <button @click="saveAttendance" :disabled="isAttendanceLocked" class="w-full sm:w-auto px-6 py-2.5 sm:py-2 text-white rounded-xl text-sm font-bold shadow-md transition-transform hover:scale-105 flex items-center justify-center disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed" :style="{ backgroundColor: settings.themeColor }">
                                             💾 บันทึก
                                         </button>
                                     </div>
@@ -554,8 +572,8 @@
                                             </div>
                                         </div>
                                         <!-- ปุ่ม 3 สถานะ (มา, ขาด, ลา) -->
-                                        <button @click="toggleAttendance(std.id)" 
-                                                class="w-full sm:w-auto px-6 py-2.5 sm:py-2 rounded-xl font-bold text-white transition-transform hover:scale-105 shadow-md sm:min-w-[120px] text-center"
+                                        <button @click="toggleAttendance(std.id)" :disabled="isAttendanceLocked"
+                                                class="w-full sm:w-auto px-6 py-2.5 sm:py-2 rounded-xl font-bold text-white transition-transform hover:scale-105 shadow-md sm:min-w-[120px] text-center disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
                                                 :style="{ backgroundColor: getAttendanceStatusDisplay(std.id).color }">
                                             {{ getAttendanceStatusDisplay(std.id).label }}
                                         </button>
@@ -575,8 +593,11 @@
                                                 <th class="border border-blue-700 p-2 text-left w-40">ชื่อ-สกุล</th>
                                                 
                                                 <!-- แสดงคอลัมน์วันที่แบบไดนามิก -->
-                                                <th v-for="date in dynamicAttendanceDates" :key="date" class="border border-blue-700 p-1 text-xs w-8 whitespace-nowrap bg-blue-500" :title="date">
-                                                    {{ date.split('T')[0].split('-')[2] }}/{{ date.split('T')[0].split('-')[1] }}
+                                                <th v-for="date in dynamicAttendanceDates" :key="date" class="border border-blue-700 p-1 text-xs w-8 whitespace-nowrap bg-blue-500 group" :title="date">
+                                                    <div class="flex flex-col items-center gap-1">
+                                                        <span>{{ date.split('T')[0].split('-')[2] }}/{{ date.split('T')[0].split('-')[1] }}</span>
+                                                        <button @click.stop="deleteAttendanceByDate(date)" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] shadow-sm transition-transform hover:scale-110" title="ลบข้อมูลเช็คชื่อเฉพาะวันนี้">✖</button>
+                                                    </div>
                                                 </th>
 
                                                 <th class="border border-blue-700 p-2 w-12 bg-green-600">มา</th>
@@ -825,36 +846,8 @@
                                         </div>
 
                                         <div>
-                                            <label class="block font-bold text-gray-700 mb-2">สีธีมหลัก (Theme Color)</label>
-                                            <div class="flex items-center gap-4">
-                                                <input type="color" v-model="settings.themeColor" class="w-12 h-12 sm:w-16 sm:h-16 rounded cursor-pointer border-0 p-0">
-                                                <span class="text-gray-500 font-mono text-sm sm:text-base">{{ settings.themeColor }}</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div>
-                                            <label class="block font-bold text-gray-700 mb-2">รหัสผ่านแอดมิน (คุณครู)</label>
-                                            <input type="text" v-model="settings.adminPassword" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
-                                        </div>
-
-                                        <div class="p-3 sm:p-4 bg-green-50 rounded-xl border-2 border-green-200 shadow-sm mt-4">
-                                            <h5 class="font-bold text-green-800 mb-2 flex items-center gap-2 text-sm sm:text-base"><span>☁️</span> ระบบออนไลน์เต็มรูปแบบ 100%</h5>
-                                            <p class="text-xs sm:text-sm text-green-700 leading-relaxed font-medium">ข้อมูลรายชื่อนักเรียน การเช็คชื่อ การบ้าน การตั้งค่า และรูปภาพ จะถูกซิงค์และบันทึกลง Google Sheets ออนไลน์แบบเรียลไทม์โดยอัตโนมัติ (ไม่จำเป็นต้องกดบันทึกคลาวด์เอง ข้อมูลตรงกันทุกเครื่องแน่นอนจ้า) ✨</p>
-                                        </div>
-
-                                        <div>
-                                            <label class="block font-bold text-gray-700 mb-2">รหัสผ่านนักเรียน (ส่วนกลาง)</label>
-                                            <input type="text" v-model="settings.studentPassword" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
-                                            <p class="text-xs text-gray-500 mt-1">* หากนักเรียนคนไหนไม่มีรหัสผ่านเฉพาะตัว จะใช้รหัสนี้แทน</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="space-y-4">
-                                        <h4 class="font-bold text-base sm:text-lg border-b pb-2">ตกแต่งแอปพลิเคชัน (ต้องใส่ Web App URL ก่อนอัปโหลด)</h4>
-                                        
-                                        <div>
-                                            <label class="block font-bold text-gray-700 mb-2">ชื่อชุมนุม / ชื่อแอปพลิเคชัน</label>
-                                            <input type="text" v-model="settings.clubName" placeholder="เช่น ชุมนุมการบ้านคณิตติดเพื่อน" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                            <label class="block font-bold text-gray-700 mb-2">ข้อความต้อนรับ (ป้ายหน้า Login)</label>
+                                            <input type="text" v-model="settings.welcomeMessage" placeholder="เช่น ครูแนน & ครูนุ่น" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                         </div>
 
                                         <div>
@@ -879,6 +872,21 @@
                                             <label class="block font-bold text-gray-700 mb-2">รหัสผ่านนักเรียน (ส่วนกลาง)</label>
                                             <input type="text" v-model="settings.studentPassword" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                             <p class="text-xs text-gray-500 mt-1">* หากนักเรียนคนไหนไม่มีรหัสผ่านเฉพาะตัว จะใช้รหัสนี้แทน</p>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block font-bold text-gray-700 mb-2">🔒 ล็อควันจัดกิจกรรม (อนุญาตเฉพาะวันที่กำหนด)</label>
+                                            <select v-model="settings.allowedDay" class="w-full p-3 border-2 rounded-xl focus:outline-none font-bold text-gray-700" :style="{ borderColor: settings.themeColor + '40' }">
+                                                <option value="all">✅ เปิดทุกวัน (ไม่ล็อค)</option>
+                                                <option value="1">เฉพาะวันจันทร์</option>
+                                                <option value="2">เฉพาะวันอังคาร</option>
+                                                <option value="3">เฉพาะวันพุธ</option>
+                                                <option value="4">เฉพาะวันพฤหัสบดี</option>
+                                                <option value="5">เฉพาะวันศุกร์</option>
+                                                <option value="6">เฉพาะวันเสาร์</option>
+                                                <option value="0">เฉพาะวันอาทิตย์</option>
+                                            </select>
+                                            <p class="text-xs text-gray-500 mt-1">* หากล็อควัน จะกดเช็คชื่อและส่งงานได้แค่วันที่เลือกเท่านั้น</p>
                                         </div>
                                     </div>
                                     
@@ -999,8 +1007,13 @@
                                         <button type="button" @click="removePendingFile" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md hover:bg-red-600">X</button>
                                     </div>
                                 </div>
+                                
+                                <div v-if="isTaskLocked" class="col-span-1 sm:col-span-2 md:col-span-12 bg-red-50 text-red-600 p-3 rounded-xl border border-red-200 mt-2 font-bold flex items-center justify-center gap-2 text-sm">
+                                    <span class="text-lg">🔒</span> วันนี้ถูกล็อค! ไม่อนุญาตให้สั่งหรือส่งการบ้านในวันนี้นะจ๊ะ
+                                </div>
+
                                 <div class="col-span-1 sm:col-span-2 md:col-span-12 flex justify-end mt-2">
-                                    <button type="submit" :disabled="isUploading" class="w-full sm:w-auto px-8 py-3 text-white font-bold rounded-xl shadow-md hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2" :style="{ backgroundColor: settings.themeColor }">
+                                    <button type="submit" :disabled="isUploading || isTaskLocked" class="w-full sm:w-auto px-8 py-3 text-white font-bold rounded-xl shadow-md hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-2" :style="{ backgroundColor: settings.themeColor }">
                                         บันทึกการบ้าน
                                     </button>
                                 </div>
@@ -1032,11 +1045,11 @@
                                         </div>
                                     </div>
                                     <div class="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
-                                        <button @click="toggleTaskStatus(task.id)" class="px-4 py-2.5 sm:py-2 rounded-xl font-bold text-white shadow-sm flex-1 sm:flex-none text-center transition-transform hover:scale-105 text-sm sm:text-base" 
+                                        <button @click="toggleTaskStatus(task.id)" :disabled="isTodayLocked" class="px-4 py-2.5 sm:py-2 rounded-xl font-bold text-white shadow-sm flex-1 sm:flex-none text-center transition-transform hover:scale-105 text-sm sm:text-base disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed" 
                                             :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
                                             {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ ยังไม่เสร็จ' }}
                                         </button>
-                                        <button @click="deleteTask(task.id)" class="px-3 py-2.5 sm:py-2 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors font-bold text-sm sm:text-base text-center">
+                                        <button @click="deleteTask(task.id)" :disabled="isTodayLocked" class="px-3 py-2.5 sm:py-2 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors font-bold text-sm sm:text-base text-center disabled:opacity-50 disabled:cursor-not-allowed">
                                             ลบ
                                         </button>
                                     </div>
@@ -1064,6 +1077,21 @@
                 const loginName = ref('');
                 const loginCode = ref('');
 
+                // Helper functions สำหรับจัดการวันที่ให้ตรงกับ Timezone ท้องถิ่น (ไทย) เสมอ
+                const getTodayLocal = () => {
+                    const d = new Date();
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+                const getMonthLocal = () => {
+                    const d = new Date();
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    return `${year}-${month}`;
+                };
+
                 // ฝัง URL ของ Apps Script สำหรับใช้เป็น API ออนไลน์
                 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbweg5E2PgPSV4c89Ex2RB88Hl1Vy13cjIg2ZhUPxCXCv3O9_tlU9NJvOtLV5QJxvz5xpQ/exec';
 
@@ -1071,13 +1099,15 @@
                 const defaultSettings = {
                     clubName: 'ชุมนุมการบ้านคณิตติดเพื่อน',
                     themeColor: '#f472b6',
+                    welcomeMessage: 'ครูแนน & ครูนุ่น',
                     adminPassword: 'nannoonadmin,noon031138,nan111',
                     studentPassword: '123456',
                     loginBanner: '',
                     iconStudent: '',
                     iconTeacher: '',
                     teacher1: '',
-                    teacher2: ''
+                    teacher2: '',
+                    allowedDay: 'all'
                 };
 
                 const defaultStudents = [
@@ -1103,24 +1133,33 @@
                 const attFilterSemester = ref('1');
                 const attFilterYear = ref(new Date().getFullYear() + 543);
                 const attMode = ref('daily');
-                const attendanceDate = ref(new Date().toISOString().split('T')[0]);
-                const attMonth = ref(new Date().toISOString().slice(0, 7));
-                const attStartDate = ref(new Date().toISOString().split('T')[0]);
-                const attEndDate = ref(new Date().toISOString().split('T')[0]);
+                const attendanceDate = ref(getTodayLocal());
+                const attMonth = ref(getMonthLocal());
+                const attStartDate = ref(getTodayLocal());
+                const attEndDate = ref(getTodayLocal());
 
                 const reportMode = ref('daily');
-                const reportDate = ref(new Date().toISOString().split('T')[0]);
-                const reportMonth = ref(new Date().toISOString().slice(0, 7));
-                const reportStartDate = ref(new Date().toISOString().split('T')[0]);
-                const reportEndDate = ref(new Date().toISOString().split('T')[0]);
+                const reportDate = ref(getTodayLocal());
+                const reportMonth = ref(getMonthLocal());
+                const reportStartDate = ref(getTodayLocal());
+                const reportEndDate = ref(getTodayLocal());
 
-                const newTask = ref({ date: new Date().toISOString().split('T')[0], dueDate: '', subject: '', detail: '' });
+                const newTask = ref({ date: getTodayLocal(), dueDate: '', subject: '', detail: '' });
                 const pendingFile = ref(null);
                 const pendingImageUrl = ref(''); // เพิ่ม state สำหรับพรีวิวรูป
                 const newStudent = ref({ code: '', name: '', fullname: '', classRoom: '', password: '', profileUrl: '' });
                 const studentSearch = ref('');
                 const viewingStudent = ref(null);
                 
+                const pendingProfileFile = ref(null);
+                const pendingProfileUrl = ref('');
+
+                // เคลียร์รูปภาพพรีวิวทิ้ง เมื่อปิดหน้าต่างโปรไฟล์หรือเปลี่ยนไปดูคนอื่น
+                watch(viewingStudent, () => {
+                    pendingProfileFile.value = null;
+                    pendingProfileUrl.value = '';
+                });
+
                 const localImageMap = ref({}); // เก็บ URL รูปจำลองไว้โชว์ชั่วคราวขณะรอลิงก์จริงโหลดเสร็จจาก Google Drive
 
                 const showOnlineImport = ref(false);
@@ -1302,6 +1341,26 @@
                 // Computed
                 const uniqueClasses = computed(() => {
                     return [...new Set(students.value.map(s => s.classRoom).filter(Boolean))];
+                });
+
+                const isAttendanceLocked = computed(() => {
+                    if (!settings.value.allowedDay || settings.value.allowedDay === 'all') return false;
+                    if (!attendanceDate.value) return false;
+                    const d = new Date(attendanceDate.value);
+                    return d.getDay().toString() !== settings.value.allowedDay;
+                });
+
+                const isTaskLocked = computed(() => {
+                    if (!settings.value.allowedDay || settings.value.allowedDay === 'all') return false;
+                    if (!newTask.value.date) return false;
+                    const d = new Date(newTask.value.date);
+                    return d.getDay().toString() !== settings.value.allowedDay;
+                });
+
+                const isTodayLocked = computed(() => {
+                    if (!settings.value.allowedDay || settings.value.allowedDay === 'all') return false;
+                    const d = new Date();
+                    return d.getDay().toString() !== settings.value.allowedDay;
                 });
 
                 // สร้างลิสต์วิชาและรายละเอียดที่เคยพิมพ์ไปแล้ว เพื่อทำ Autofill
@@ -1498,6 +1557,16 @@
                     });
                 };
 
+                const deleteAttendanceByDate = (dateToDelete) => {
+                    showModal('ยืนยันลบข้อมูลรายวัน', `ต้องการลบข้อมูลการเช็คชื่อของวันที่ ${dateToDelete} ทั้งหมดทิ้งใช่หรือไม่?`, 'confirm', async () => {
+                        attendance.value = attendance.value.filter(a => a.date !== dateToDelete);
+                        hasPendingChanges = true;
+                        closeModal();
+                        await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
+                        showModal('สำเร็จ', `ล้างข้อมูลการเช็คชื่อของวันที่ ${dateToDelete} เรียบร้อยแล้วจ้า 🗑️`);
+                    });
+                };
+
                 const saveAttendance = async () => {
                     isUploading.value = true;
                     try {
@@ -1587,45 +1656,72 @@
                     });
                 };
 
-                const uploadProfilePic = async (event, studentObj) => {
+                const onProfilePicChange = (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
-                    
-                    // สร้างรูปจำลองเพื่อแสดงผลให้เห็นทันที ไม่ต้องรอคลาวด์
-                    const tempUrl = URL.createObjectURL(file);
-                    const oldUrl = studentObj.profileUrl;
-                    studentObj.profileUrl = tempUrl;
-                    if (user.value && user.value.id === studentObj.id) {
-                        user.value.profileUrl = tempUrl;
-                    }
+                    pendingProfileFile.value = file;
+                    pendingProfileUrl.value = URL.createObjectURL(file);
+                    event.target.value = ''; // เคลียร์ input ให้เลือกไฟล์เดิมซ้ำได้
+                };
 
+                const cancelProfilePic = () => {
+                    pendingProfileFile.value = null;
+                    pendingProfileUrl.value = '';
+                };
+
+                const saveProfilePic = async (studentObj) => {
+                    if (!pendingProfileFile.value) return;
                     isUploading.value = true;
                     try {
-                        const url = await uploadImageToDrive(file);
-                        studentObj.profileUrl = url; // สลับเป็นลิงก์จริงที่ได้จากคลาวด์
+                        const url = await uploadImageToDrive(pendingProfileFile.value);
+                        
+                        // 1. อัปเดตตัวแปรโปรไฟล์ปัจจุบัน
+                        studentObj.profileUrl = url; 
+                        if (viewingStudent.value && viewingStudent.value.id === studentObj.id) {
+                            viewingStudent.value.profileUrl = url;
+                        }
+                        
+                        // 2. อัปเดตกลับไปที่อาเรย์ตารางหลัก (รับประกันการเปลี่ยนรูปทันที 100%)
+                        const idx = students.value.findIndex(s => s.id === studentObj.id);
+                        if (idx > -1) {
+                            students.value[idx].profileUrl = url;
+                        }
+                        
+                        // 3. อัปเดตใน session หากเป็นตัวเอง
                         if (user.value && user.value.id === studentObj.id) {
                             user.value.profileUrl = url;
                         }
+                        
                         hasPendingChanges = true;
-                        await saveDataToCloud(); // บังคับเซฟทันทีเมื่ออัปโหลดเสร็จ
-                        showModal('น่ารักมาก!', 'อัปโหลดรูปโปรไฟล์สำเร็จแล้วจ้า ✨');
+                        await saveDataToCloud(); // บังคับเซฟทันที
+                        showModal('สำเร็จ!', 'บันทึกรูปโปรไฟล์ใหม่เรียบร้อยแล้วจ้า ✨');
                     } catch(e) {
-                        // หากอัปโหลดไม่ผ่าน ให้คืนค่าเป็นรูปเดิม
-                        studentObj.profileUrl = oldUrl; 
-                        if (user.value && user.value.id === studentObj.id) user.value.profileUrl = oldUrl;
                         showModal('ข้อผิดพลาด', 'อัปโหลดรูปไม่สำเร็จ: ' + (e.message || e.toString()));
                     } finally {
                         isUploading.value = false;
-                        event.target.value = '';
+                        cancelProfilePic();
                     }
                 };
 
                 const removeProfilePic = async (studentObj) => {
                     showModal('ยืนยัน', 'ต้องการลบรูปโปรไฟล์ใช่หรือไม่?', 'confirm', async () => {
+                        // 1. อัปเดตลบตัวแปรโปรไฟล์ปัจจุบัน
                         studentObj.profileUrl = '';
+                        if (viewingStudent.value && viewingStudent.value.id === studentObj.id) {
+                            viewingStudent.value.profileUrl = '';
+                        }
+
+                        // 2. อัปเดตลบในอาเรย์ตารางหลัก (รูปในตารางจะหายวับไปทันที)
+                        const idx = students.value.findIndex(s => s.id === studentObj.id);
+                        if (idx > -1) {
+                            students.value[idx].profileUrl = '';
+                        }
+
+                        // 3. อัปเดตลบใน session หากเป็นตัวเอง
                         if (user.value && user.value.id === studentObj.id) {
                             user.value.profileUrl = '';
                         }
+                        
                         hasPendingChanges = true;
                         closeModal();
                         await saveDataToCloud();
@@ -1897,7 +1993,7 @@
                         tasks.value.push({ 
                             id: newTaskId, 
                             studentId: user.value.id, 
-                            date: newTask.value.date || new Date().toISOString().split('T')[0],
+                            date: newTask.value.date || getTodayLocal(),
                             dueDate: newTask.value.dueDate || '',
                             subject: newTask.value.subject,
                             detail: newTask.value.detail,
@@ -1905,7 +2001,7 @@
                             isCompleted: false 
                         });
                         
-                        newTask.value = { date: new Date().toISOString().split('T')[0], dueDate: '', subject: '', detail: '' };
+                        newTask.value = { date: getTodayLocal(), dueDate: '', subject: '', detail: '' };
                         hasPendingChanges = true;
                         await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
                         showModal('สำเร็จ', 'บันทึกการบ้านลงระบบเรียบร้อยแล้วจ้า! 📝✨');
@@ -1934,7 +2030,7 @@
                 };
 
                 const getStudentTodayStatus = () => {
-                    const today = new Date().toISOString().split('T')[0];
+                    const today = getTodayLocal();
                     if(!user.value) return {label:'', color:''};
                     const record = attendance.value.find(a => a.studentId === user.value.id && a.date === today);
                     if (!record) return { label: 'ยังไม่เช็ค', color: '#9ca3af' };
@@ -1970,7 +2066,7 @@
                     const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement("a");
                     link.href = URL.createObjectURL(blob);
-                    link.download = `เช็คชื่อ_${attMode.value}.csv`;
+                    link.download = `เช็คชื่อ_${attMode.value}_${getTodayLocal()}.csv`;
                     link.click();
                 };
 
@@ -2000,7 +2096,7 @@
                     const ws = XLSX.utils.aoa_to_sheet(data);
                     const wb = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(wb, ws, "รายงานการบ้าน");
-                    XLSX.writeFile(wb, `รายงานการบ้าน_${reportMode.value}_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    XLSX.writeFile(wb, `รายงานการบ้าน_${reportMode.value}_${getTodayLocal()}.xlsx`);
                 };
 
                 // ฟังก์ชันช่วยโหลดรูปภาพทั้งหมดให้เสร็จก่อนที่จะสร้าง PDF/JPG (ป้องกันรูปหาย)
@@ -2077,7 +2173,7 @@
                         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
                         
                         pdf.addImage(imgData, 'JPEG', 10, 10, pdfWidth, pdfHeight);
-                        pdf.save(`รายงานการบ้านรวม_${new Date().toISOString().split('T')[0]}.pdf`);
+                        pdf.save(`รายงานการบ้านรวม_${getTodayLocal()}.pdf`);
                     } catch(e) {
                         showModal('ข้อผิดพลาด', 'ไม่สามารถสร้าง PDF ได้: ' + e.message);
                     } finally {
@@ -2098,7 +2194,7 @@
                             backgroundColor: '#ffffff' 
                         });
                         const link = document.createElement('a');
-                        link.download = `รายงานการบ้านรวม_${new Date().toISOString().split('T')[0]}.jpg`;
+                        link.download = `รายงานการบ้านรวม_${getTodayLocal()}.jpg`;
                         link.href = canvas.toDataURL('image/jpeg', 1.0);
                         link.click();
                     } catch(e) {
@@ -2243,10 +2339,10 @@
                     uniqueClasses, filteredStudentsForReport, myTasks, flatReportTasks, localImageMap, checkedCount,
                     newTask, newStudent, modal, showModal, closeModal,
                     pendingFile, pendingImageUrl, onFileChange, removePendingFile, isUploading,
-                    studentSearch, viewingStudent, filteredStudentsForManagement, uploadProfilePic, removeProfilePic,
+                    studentSearch, viewingStudent, filteredStudentsForManagement, onProfilePicChange, cancelProfilePic, saveProfilePic, removeProfilePic, pendingProfileUrl,
                     selectedStudents, isAllStudentsSelected, toggleSelectAllStudents, deleteSelectedStudents,
                     showOnlineImport, onlineSheetUrl, importFromOnlineSheet, importStudentsFile, exportStudentsExcel,
-                    getAttendanceStatusDisplay, toggleAttendance, markAllPresent, clearDailyAttendance, clearAllAttendance, clearDisplayedAttendance, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
+                    getAttendanceStatusDisplay, toggleAttendance, markAllPresent, clearDailyAttendance, clearAllAttendance, clearDisplayedAttendance, deleteAttendanceByDate, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
                     dynamicAttendanceDates, getAttendanceMark,
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
@@ -2254,7 +2350,7 @@
                     exportAdminReportDoc, exportAdminReportPdf, exportAdminReportImage,
                     exportStudentReportDoc, exportStudentReportPdf, exportStudentReportImage,
                     saveDataToCloud, loadDataFromCloud, isOnlineSyncing,
-                    allSubjects, allDetails
+                    allSubjects, allDetails, isAttendanceLocked, isTaskLocked, isTodayLocked
                 };
             }
         }).mount('#app');
