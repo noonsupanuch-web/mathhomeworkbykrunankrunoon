@@ -124,6 +124,61 @@
             </div>
         </transition>
 
+        <!-- Edit Homework Modal (หน้าต่างแก้ไขการบ้านและเพิ่ม/เปลี่ยนรูปภาพ) -->
+        <transition name="fade">
+            <div v-if="editingTask" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4">
+                <div class="bg-white rounded-[2rem] p-5 sm:p-7 w-full max-w-lg shadow-2xl border-4 relative max-h-[92vh] overflow-y-auto" :style="{ borderColor: settings.themeColor }">
+                    <button @click="closeEditTaskModal" class="absolute top-3 right-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-9 h-9 flex items-center justify-center font-bold transition-transform hover:scale-110">X</button>
+                    <h3 class="text-xl sm:text-2xl font-extrabold mb-4 flex items-center gap-2" :style="{ color: settings.themeColor }">
+                        <span>✏️</span> แก้ไขการบ้าน / เพิ่มรูปภาพ
+                    </h3>
+
+                    <form @submit.prevent="saveEditedTask" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">วันที่สั่ง</label>
+                                <input type="date" v-model="editingTask.date" required class="w-full p-2.5 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">กำหนดส่ง (ถ้ามี)</label>
+                                <input type="date" v-model="editingTask.dueDate" class="w-full p-2.5 border-2 rounded-xl focus:outline-none bg-gray-50" :style="{ borderColor: settings.themeColor + '40' }">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">วิชา</label>
+                            <input type="text" v-model="editingTask.subject" list="subject-list" required placeholder="เช่น คณิตศาสตร์" class="w-full p-2.5 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">รายละเอียดงาน</label>
+                            <textarea v-model="editingTask.detail" rows="3" required placeholder="แก้ไขรายละเอียดการบ้าน..." class="w-full p-2.5 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">รูปภาพแนบ (เพิ่ม / เปลี่ยนรูปใหม่ได้)</label>
+                            <input type="file" id="editTaskFileInput" @change="onEditTaskFileChange" accept="image/*" class="w-full p-2 border-2 rounded-xl focus:outline-none bg-gray-50 text-sm" :style="{ borderColor: settings.themeColor + '40' }">
+
+                            <!-- พรีวิวรูปภาพเดิมหรือรูปที่เลือกใหม่ -->
+                            <div v-if="editPendingImageUrl || (!editRemoveImage && (localImageMap[editingTask.id] || editingTask.imageUrl))" class="mt-3 relative inline-block">
+                                <img :src="editPendingImageUrl || localImageMap[editingTask.id] || editingTask.imageUrl" class="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-xl border-2 shadow-sm" :style="{ borderColor: settings.themeColor }">
+                                <button type="button" @click="removeEditTaskImage" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full px-2 py-1 text-xs font-bold shadow-md hover:bg-red-600" title="ลบรูปภาพนี้">🗑️ ลบรูป</button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-2 pt-2">
+                            <button type="button" @click="closeEditTaskModal" :disabled="isUploading" class="px-5 py-3 rounded-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors w-full sm:w-auto">
+                                ยกเลิก
+                            </button>
+                            <button type="submit" :disabled="isUploading" class="flex-1 px-6 py-3 rounded-xl font-bold text-white shadow-md hover:scale-105 transition-transform disabled:opacity-50 w-full sm:w-auto" :style="{ backgroundColor: settings.themeColor }">
+                                {{ isUploading ? '⏳ กำลังบันทึก...' : '💾 บันทึกการแก้ไข' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </transition>
+
         <!-- Student Profile Modal -->
         <transition name="fade">
             <div v-if="viewingStudent" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
@@ -276,6 +331,13 @@
                                               :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
                                             {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ รอส่งงาน' }}
                                         </span>
+
+                                        <!-- ปุ่มแก้ไขข้อความ / เพิ่มรูปภาพ -->
+                                        <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="openEditTaskModal(task)" 
+                                                :disabled="isTodayLocked && user.role !== 'admin'"
+                                                class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 bg-blue-50 text-blue-600 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-100 border border-blue-200 transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed">
+                                            ✏️ แก้ไข / เพิ่มรูป
+                                        </button>
                                         
                                         <!-- แอดมินสามารถลบงานขยะทิ้งได้ -->
                                         <button v-if="user.role === 'admin' || user.id === viewingStudent.id" @click="deleteTask(task.id)" 
@@ -526,22 +588,34 @@
                                             <input type="date" v-model="attendanceDate" class="border-2 rounded-lg p-1.5 font-bold focus:outline-none bg-white text-blue-900 shadow-inner w-full sm:w-auto" :style="{ borderColor: settings.themeColor }"/>
                                         </div>
                                     </div>
-                                    
-                                    <div class="bg-indigo-50 p-3 md:p-4 rounded-xl border border-indigo-100 flex flex-col md:flex-row justify-between items-center gap-3 shadow-sm">
-                                        <div class="text-center md:text-left w-full">
-                                            <p class="text-sm md:text-base font-bold text-indigo-900">กำลังจัดการข้อมูลของวันที่ <span class="text-indigo-700 bg-white px-2 py-0.5 rounded shadow-sm border border-indigo-100 whitespace-nowrap">{{ attendanceDate }}</span></p>
-                                            <p class="text-xs md:text-sm text-indigo-700 mt-1 font-medium">เช็คแล้ว <span class="font-bold text-indigo-900">{{ checkedCount }}</span> คน จากทั้งหมด {{ filteredStudentsForReport.length }} คน <br class="md:hidden">(เปลี่ยนวันที่ด้านบนเพื่อแก้ไขย้อนหลังได้เลย)</p>
-                                        </div>
-                                        <div class="text-center md:text-right whitespace-nowrap w-full md:w-auto">
-                                            <span v-if="checkedCount === filteredStudentsForReport.length && filteredStudentsForReport.length > 0" class="text-sm font-bold text-green-700 bg-green-100 px-4 py-2 rounded-full border border-green-300 shadow-sm block sm:inline-block">✨ เช็คครบทุกคนแล้ว</span>
-                                            <span v-else-if="checkedCount > 0" class="text-sm font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-full border border-orange-300 shadow-sm block sm:inline-block">⏳ ยังเช็คไม่ครบ</span>
-                                            <span v-else class="text-sm font-bold text-red-600 bg-red-100 px-4 py-2 rounded-full border border-red-300 shadow-sm block sm:inline-block">⚠️ วันนี้ยังไม่มีการเช็คชื่อ</span>
-                                        </div>
+
+                                    <!-- ป้ายสรุปสถานะการเช็คชื่อของวันที่เลือก -->
+                                    <div v-if="filteredStudentsForReport.length > 0" class="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl border"
+                                         :class="checkedCount === 0 ? 'bg-red-50 text-red-600 border-red-200' : (checkedCount < filteredStudentsForReport.length ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-green-50 text-green-700 border-green-200')">
+                                        <span>📊 สถานะวันที่ {{ attendanceDate }}: เช็คแล้ว {{ checkedCount }} / {{ filteredStudentsForReport.length }} คน</span>
+                                        <span v-if="checkedCount === 0">⚠️ วันนี้ยังไม่มีการเช็คชื่อ</span>
+                                        <span v-else-if="checkedCount < filteredStudentsForReport.length">⏳ ยังเช็คไม่ครบ</span>
+                                        <span v-else>✨ เช็คครบทุกคนแล้ว</span>
                                     </div>
-                                    
-                                    <!-- แจ้งเตือนล็อควัน -->
-                                    <div v-if="isAttendanceLocked" class="bg-red-50 text-red-600 p-3 rounded-xl border border-red-200 mb-4 font-bold flex flex-col sm:flex-row items-center justify-center gap-2 text-sm sm:text-base">
-                                        <span class="text-xl">🔒</span> ระบบถูกล็อค! อนุญาตให้เช็คชื่อเฉพาะวันที่แอดมินกำหนดเท่านั้น (ปลดล็อคได้ที่เมนูตั้งค่า)
+
+                                    <!-- แจ้งเตือนล็อควัน พร้อมปุ่มลัดเปิด/ล็อควันทันที -->
+                                    <div v-if="isAttendanceLocked" class="bg-red-50 text-red-700 p-3 sm:p-4 rounded-xl border-2 border-red-200 mb-4 font-bold flex flex-col sm:flex-row items-center justify-between gap-3 text-sm sm:text-base shadow-sm">
+                                        <div class="flex items-center gap-2 text-center sm:text-left">
+                                            <span class="text-xl">🔒</span>
+                                            <span>{{ getDayLabelFromStr(attendanceDate) }} ถูกล็อคอยู่! จึงยังไม่สามารถกดเช็คชื่อได้</span>
+                                        </div>
+                                        <button type="button" @click="toggleAllowedDay(getDayOfWeekFromStr(attendanceDate))" class="w-full sm:w-auto px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-transform hover:scale-105 whitespace-nowrap">
+                                            🔓 ปลดล็อค{{ getDayLabelFromStr(attendanceDate) }}เดี๋ยวนี้
+                                        </button>
+                                    </div>
+                                    <div v-else class="bg-green-50 text-green-700 p-2.5 sm:p-3 rounded-xl border border-green-200 mb-4 font-bold flex flex-col sm:flex-row items-center justify-between gap-2 text-xs sm:text-sm">
+                                        <div class="flex items-center gap-2">
+                                            <span>🔓</span>
+                                            <span>{{ getDayLabelFromStr(attendanceDate) }} เปิดให้เช็คชื่อได้ตามปกติ</span>
+                                        </div>
+                                        <button type="button" @click="toggleAllowedDay(getDayOfWeekFromStr(attendanceDate))" class="w-full sm:w-auto px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-bold transition-colors whitespace-nowrap">
+                                            🔒 ล็อค{{ getDayLabelFromStr(attendanceDate) }}
+                                        </button>
                                     </div>
 
                                     <!-- เพิ่มปุ่ม มาเรียนทั้งหมด และ บันทึก -->
@@ -883,8 +957,22 @@
                                         <h4 class="font-bold text-base sm:text-lg border-b pb-2">ระบบและการเข้าสู่ระบบ</h4>
                                         
                                         <div>
-                                            <label class="block font-bold text-gray-700 mb-2">ชื่อชุมนุม / ชื่อแอปพลิเคชัน</label>
-                                            <input type="text" v-model="settings.clubName" placeholder="เช่น ชุมนุมการบ้านคณิตติดเพื่อน" class="w-full p-2.5 sm:p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
+                                            <label class="block font-bold text-gray-700 mb-2">🔒 ตั้งค่าวันจัดกิจกรรม (กดเลือกวันที่อนุญาตให้เช็คชื่อและส่งงาน)</label>
+                                            <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 bg-gray-50 p-3 rounded-xl border-2" :style="{ borderColor: settings.themeColor + '40' }">
+                                                <button type="button" v-for="day in daysOfWeek" :key="day.val"
+                                                       @click="toggleAllowedDay(day.val)"
+                                                       class="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 cursor-pointer transition-all select-none shadow-sm active:scale-95"
+                                                       :class="allowedDaysArray.includes(day.val) ? 'bg-green-50 border-green-500 text-green-700 font-extrabold scale-105' : 'bg-red-50/70 border-red-200 text-gray-500 hover:bg-red-50'">
+                                                    <span class="text-sm sm:text-base">{{ day.short }}</span>
+                                                    <span class="text-[10px] mt-1 font-bold">{{ allowedDaysArray.includes(day.val) ? '🔓 เปิด' : '🔒 ล็อค' }}</span>
+                                                </button>
+                                            </div>
+                                            <div class="flex flex-wrap gap-2 mt-2">
+                                                <button type="button" @click="setAllowedDays(['1'])" class="text-xs px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-bold transition-colors">เฉพาะวันจันทร์</button>
+                                                <button type="button" @click="setAllowedDays(['0','1','2','3','4','5','6'])" class="text-xs px-3 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg font-bold transition-colors">เปิดทุกวัน</button>
+                                                <button type="button" @click="setAllowedDays([])" class="text-xs px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg font-bold transition-colors">ล็อคทุกวัน</button>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-1.5">* วันที่มีเครื่องหมาย <b>🔓 เปิด</b> เท่านั้นที่สามารถเช็คชื่อและส่งการบ้านได้ วันอื่นจะถูกล็อคอัตโนมัติ (บันทึกออนไลน์ทันทีที่กด)</p>
                                         </div>
 
                                         <div>
@@ -914,25 +1002,6 @@
                                             <label class="block font-bold text-gray-700 mb-2">รหัสผ่านนักเรียน (ส่วนกลาง)</label>
                                             <input type="text" v-model="settings.studentPassword" class="w-full p-3 border-2 rounded-xl focus:outline-none" :style="{ borderColor: settings.themeColor + '40' }">
                                             <p class="text-xs text-gray-500 mt-1">* หากนักเรียนคนไหนไม่มีรหัสผ่านเฉพาะตัว จะใช้รหัสนี้แทน</p>
-                                        </div>
-                                        
-                                        <div>
-                                            <label class="block font-bold text-gray-700 mb-2">🔒 ตั้งค่าวันจัดกิจกรรม (ติ๊กเลือกวันที่อนุญาตให้เช็คชื่อและส่งงาน)</label>
-                                            <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 bg-gray-50 p-3 rounded-xl border-2" :style="{ borderColor: settings.themeColor + '40' }">
-                                                <label v-for="day in daysOfWeek" :key="day.val" 
-                                                       class="flex flex-col items-center justify-center p-2 rounded-xl border-2 cursor-pointer transition-all select-none shadow-sm"
-                                                       :class="allowedDaysArray.includes(day.val) ? 'bg-green-50 border-green-500 text-green-700 font-extrabold scale-105' : 'bg-red-50/50 border-red-200 text-gray-400 opacity-75'">
-                                                    <input type="checkbox" :value="day.val" v-model="allowedDaysArray" class="hidden">
-                                                    <span class="text-sm sm:text-base">{{ day.short }}</span>
-                                                    <span class="text-[10px] mt-1 font-bold">{{ allowedDaysArray.includes(day.val) ? '🔓 เปิด' : '🔒 ล็อค' }}</span>
-                                                </label>
-                                            </div>
-                                            <div class="flex flex-wrap gap-2 mt-2">
-                                                <button type="button" @click="allowedDaysArray = ['1']" class="text-xs px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-bold transition-colors">เฉพาะวันจันทร์</button>
-                                                <button type="button" @click="allowedDaysArray = ['0','1','2','3','4','5','6']" class="text-xs px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg font-bold transition-colors">เปิดทุกวัน</button>
-                                                <button type="button" @click="allowedDaysArray = []" class="text-xs px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg font-bold transition-colors">ล็อคทุกวัน</button>
-                                            </div>
-                                            <p class="text-xs text-gray-500 mt-1.5">* วันที่มีเครื่องหมาย <b>🔓 เปิด</b> เท่านั้นที่สามารถเช็คชื่อและส่งการบ้านได้ วันอื่นจะถูกล็อคอัตโนมัติ</p>
                                         </div>
                                     </div>
                                     
@@ -1095,6 +1164,9 @@
                                             :class="task.isCompleted ? 'bg-green-500' : 'bg-orange-400'">
                                             {{ task.isCompleted ? '✅ เสร็จแล้ว' : '⏳ ยังไม่เสร็จ' }}
                                         </button>
+                                        <button @click="openEditTaskModal(task)" :disabled="isTodayLocked" class="px-3 py-2 sm:px-4 sm:py-2 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-colors font-bold text-xs sm:text-sm text-center flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed">
+                                            ✏️ แก้ไข / เพิ่มรูป
+                                        </button>
                                         <button @click="deleteTask(task.id)" :disabled="isTodayLocked" class="px-3 py-2 sm:px-4 sm:py-2 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors font-bold text-xs sm:text-sm text-center flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed">
                                             ลบ
                                         </button>
@@ -1136,6 +1208,20 @@
                     const year = d.getFullYear();
                     const month = String(d.getMonth() + 1).padStart(2, '0');
                     return `${year}-${month}`;
+                };
+
+                // จัดรูปแบบวันที่ให้เป็น YYYY-MM-DD เสมอ ป้องกันข้อมูลติดเวลาจาก Google Sheets
+                const normalizeDateStr = (val) => {
+                    if (!val) return '';
+                    const str = String(val).trim();
+                    if (str.includes('T')) {
+                        const d = new Date(str);
+                        if (!isNaN(d.getTime())) {
+                            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        }
+                        return str.split('T')[0];
+                    }
+                    return str;
                 };
 
                 // ฝัง URL ของ Apps Script สำหรับใช้เป็น API ออนไลน์
@@ -1203,6 +1289,10 @@
                 const newTask = ref({ date: getTodayLocal(), dueDate: '', subject: '', detail: '' });
                 const pendingFile = ref(null);
                 const pendingImageUrl = ref(''); // เพิ่ม state สำหรับพรีวิวรูป
+                const editingTask = ref(null); // state สำหรับหน้าต่างแก้ไขการบ้าน
+                const editPendingFile = ref(null);
+                const editPendingImageUrl = ref('');
+                const editRemoveImage = ref(false);
                 const newStudent = ref({ code: '', name: '', fullname: '', classRoom: '', password: '', profileUrl: '' });
                 const studentSearch = ref('');
                 const viewingStudent = ref(null);
@@ -1292,15 +1382,39 @@
                                 ['loginBanner','iconStudent','iconTeacher','teacher1','teacher2'].forEach(k => {
                                     if(data.data.settings[k]) data.data.settings[k] = fixDriveUrl(data.data.settings[k]);
                                 });
-                                if(Object.keys(data.data.settings).length > 0) settings.value = data.data.settings;
+                                if(Object.keys(data.data.settings).length > 0) {
+                                    const mergedSettings = { ...defaultSettings, ...data.data.settings };
+                                    // ป้องกันกรณีเซลล์ allowedDays ว่างเปล่าใน Google Sheets แล้วมาทับค่าเริ่มต้นจนล็อคทุกวัน
+                                    if (mergedSettings.allowedDays === '' || mergedSettings.allowedDays === null || mergedSettings.allowedDays === undefined) {
+                                        mergedSettings.allowedDays = defaultSettings.allowedDays;
+                                    } else {
+                                        mergedSettings.allowedDays = String(mergedSettings.allowedDays);
+                                    }
+                                    settings.value = mergedSettings;
+                                }
                             }
                             if (data.data.students) {
-                                data.data.students.forEach(s => s.profileUrl = fixDriveUrl(s.profileUrl));
+                                data.data.students.forEach(s => {
+                                    s.id = String(s.id);
+                                    s.profileUrl = fixDriveUrl(s.profileUrl);
+                                });
                                 students.value = data.data.students;
                             }
-                            if (data.data.attendance) attendance.value = data.data.attendance;
+                            if (data.data.attendance) {
+                                attendance.value = data.data.attendance.map(a => ({
+                                    ...a,
+                                    studentId: String(a.studentId),
+                                    date: normalizeDateStr(a.date)
+                                }));
+                            }
                             if (data.data.tasks) {
-                                data.data.tasks.forEach(t => t.imageUrl = fixDriveUrl(t.imageUrl));
+                                data.data.tasks.forEach(t => {
+                                    t.id = String(t.id);
+                                    t.studentId = String(t.studentId);
+                                    t.date = normalizeDateStr(t.date);
+                                    t.dueDate = normalizeDateStr(t.dueDate);
+                                    t.imageUrl = fixDriveUrl(t.imageUrl);
+                                });
                                 tasks.value = data.data.tasks;
                             }
                             
@@ -1336,22 +1450,48 @@
                         
                         if(data.status === 'success') {
                             isLocalSaving = true;
-                            if (data.data.settings && Object.keys(data.data.settings).length > 0) settings.value = data.data.settings;
+                            if (data.data.settings && Object.keys(data.data.settings).length > 0) {
+                                ['loginBanner','iconStudent','iconTeacher','teacher1','teacher2'].forEach(k => {
+                                    if(data.data.settings[k]) data.data.settings[k] = fixDriveUrl(data.data.settings[k]);
+                                });
+                                const mergedSettings = { ...defaultSettings, ...data.data.settings };
+                                if (mergedSettings.allowedDays === '' || mergedSettings.allowedDays === null || mergedSettings.allowedDays === undefined) {
+                                    mergedSettings.allowedDays = defaultSettings.allowedDays;
+                                } else {
+                                    mergedSettings.allowedDays = String(mergedSettings.allowedDays);
+                                }
+                                settings.value = mergedSettings;
+                            }
                             if (data.data.students) {
-                                data.data.students.forEach(s => s.profileUrl = fixDriveUrl(s.profileUrl));
+                                data.data.students.forEach(s => {
+                                    s.id = String(s.id);
+                                    s.profileUrl = fixDriveUrl(s.profileUrl);
+                                });
                                 students.value = data.data.students;
                             }
-                            if (data.data.attendance) attendance.value = data.data.attendance;
+                            if (data.data.attendance) {
+                                attendance.value = data.data.attendance.map(a => ({
+                                    ...a,
+                                    studentId: String(a.studentId),
+                                    date: normalizeDateStr(a.date)
+                                }));
+                            }
                             if (data.data.tasks) {
-                                data.data.tasks.forEach(t => t.imageUrl = fixDriveUrl(t.imageUrl));
+                                data.data.tasks.forEach(t => {
+                                    t.id = String(t.id);
+                                    t.studentId = String(t.studentId);
+                                    t.date = normalizeDateStr(t.date);
+                                    t.dueDate = normalizeDateStr(t.dueDate);
+                                    t.imageUrl = fixDriveUrl(t.imageUrl);
+                                });
                                 tasks.value = data.data.tasks;
                             }
                             setTimeout(() => { isLocalSaving = false; }, 1000);
                         }
                     } catch (e) {
-                        // ปิดแจ้งเตือน Error ใน Console สำหรับการโหลดเงียบ
+                        // เงียบไว้หากเน็ตหลุดชั่วคราว
                     } finally {
-                        isOnlineSyncing.value = false;
+                        setTimeout(() => { isOnlineSyncing.value = false; }, 500);
                     }
                 };
 
@@ -1399,32 +1539,64 @@
                     return [...new Set(students.value.map(s => s.classRoom).filter(Boolean))];
                 });
 
-                // จัดการ Array ของวันที่อนุญาตให้เปิดใช้งาน (ซิงค์กับ Google Sheets ในรูปแบบ String คั่นด้วยลูกน้ำ เช่น "1" หรือ "1,3,5")
+                // จัดการ Array ของวันที่อนุญาตให้เปิดใช้งาน (ซิงค์กับ Google Sheets ในรูปแบบ String คั่นด้วยลูกน้ำ เช่น "1" หรือ "1,3,5" หรือ "NONE" เมื่อล็อคทุกวัน)
                 const allowedDaysArray = computed({
                     get: () => {
                         // รองรับการตั้งค่าแบบเก่าเผื่อมีค้างในฐานข้อมูล
-                        if (settings.value.allowedDays === undefined || settings.value.allowedDays === null) {
+                        if (settings.value.allowedDays === undefined || settings.value.allowedDays === null || String(settings.value.allowedDays).trim() === '') {
                             if (settings.value.allowedDay === 'all') return ['0','1','2','3','4','5','6'];
-                            if (settings.value.allowedDay) return [String(settings.value.allowedDay)];
+                            if (settings.value.allowedDay !== undefined && settings.value.allowedDay !== '') return [String(settings.value.allowedDay)];
                             return ['1']; // ค่าเริ่มต้นวันจันทร์วันเดียว
                         }
-                        if (settings.value.allowedDays === '') return [];
-                        return String(settings.value.allowedDays).split(',').map(s => s.trim()).filter(Boolean);
+                        const rawStr = String(settings.value.allowedDays).trim();
+                        if (rawStr === 'NONE') return [];
+                        return rawStr.split(',').map(s => s.trim()).filter(Boolean);
                     },
                     set: (val) => {
-                        settings.value.allowedDays = val.join(',');
+                        const clean = [...new Set(val.map(v => String(v).trim()).filter(Boolean))];
+                        settings.value.allowedDays = clean.length > 0 ? clean.join(',') : 'NONE';
                     }
                 });
+
+                // ฟังก์ชันสลับสถานะ เปิด/ล็อค วันแบบกดปุ่มโดยตรง พร้อมบันทึกออนไลน์ทันที
+                const toggleAllowedDay = (dayVal) => {
+                    const target = String(dayVal);
+                    const current = [...allowedDaysArray.value];
+                    const idx = current.indexOf(target);
+                    if (idx > -1) {
+                        current.splice(idx, 1);
+                    } else {
+                        current.push(target);
+                    }
+                    hasPendingChanges = true;
+                    allowedDaysArray.value = current;
+                    clearTimeout(saveTimeout);
+                    saveDataToCloud();
+                };
+
+                const setAllowedDays = (daysArr) => {
+                    hasPendingChanges = true;
+                    allowedDaysArray.value = daysArr;
+                    clearTimeout(saveTimeout);
+                    saveDataToCloud();
+                };
 
                 // ฟังก์ชันแปลงวันที่ YYYY-MM-DD เป็นเลขวันประจำสัปดาห์ (0=อาทิตย์, 1=จันทร์, ...) แบบไม่เพี้ยนตาม Timezone
                 const getDayOfWeekFromStr = (dateStr) => {
                     if (!dateStr) return new Date().getDay().toString();
-                    const parts = dateStr.split('-');
+                    const normalized = normalizeDateStr(dateStr);
+                    const parts = normalized.split('-');
                     if (parts.length === 3) {
                         const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
                         return d.getDay().toString();
                     }
-                    return new Date(dateStr).getDay().toString();
+                    return new Date(normalized).getDay().toString();
+                };
+
+                const getDayLabelFromStr = (dateStr) => {
+                    const dayVal = getDayOfWeekFromStr(dateStr);
+                    const found = daysOfWeek.find(d => d.val === dayVal);
+                    return found ? found.label : 'วันนี้';
                 };
 
                 const isAttendanceLocked = computed(() => {
@@ -1489,7 +1661,9 @@
                 });
 
                 const checkedCount = computed(() => {
-                    return attendance.value.filter(a => a.date === attendanceDate.value).length;
+                    const targetDate = normalizeDateStr(attendanceDate.value);
+                    const studentIds = new Set(filteredStudentsForReport.value.map(s => String(s.id)));
+                    return attendance.value.filter(a => normalizeDateStr(a.date) === targetDate && studentIds.has(String(a.studentId))).length;
                 });
 
                 const flatReportTasks = computed(() => {
@@ -1519,7 +1693,7 @@
 
                 const myTasks = computed(() => {
                     if (!user.value || user.value.role !== 'student') return [];
-                    return tasks.value.filter(t => t.studentId === user.value.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+                    return tasks.value.filter(t => String(t.studentId) === String(user.value.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
                 });
 
                 // Methods - Auth
@@ -1565,7 +1739,9 @@
 
                 // Methods - Admin Attendance
                 const getAttendanceStatusDisplay = (stdId) => {
-                    const record = attendance.value.find(a => a.studentId === stdId && a.date === attendanceDate.value);
+                    const targetId = String(stdId);
+                    const targetDate = normalizeDateStr(attendanceDate.value);
+                    const record = attendance.value.find(a => String(a.studentId) === targetId && normalizeDateStr(a.date) === targetDate);
                     if (!record) return { label: 'ยังไม่เช็ค', badge: 'ยังไม่เช็ค', color: '#9ca3af', bgColor: '#ffffff', status: 'none' };
                     if (record.status === 'present') return { label: 'มาเรียน', badge: '✅ เช็คแล้ว: มาเรียน', color: '#10b981', bgColor: '#ecfdf5', status: 'present' };
                     if (record.status === 'activity') return { label: 'กิจกรรม', badge: '🟣 เช็คแล้ว: กิจกรรม', color: '#8b5cf6', bgColor: '#f5f3ff', status: 'activity' };
@@ -1575,13 +1751,18 @@
                 };
 
                 const setAttendanceStatus = async (stdId, status) => {
+                    if (isAttendanceLocked.value) {
+                        showModal('🔒 ระบบถูกล็อค', 'วันที่เลือกไม่ได้เปิดให้เช็คชื่อ (สามารถไปตั้งค่าเปิดวันได้ที่เมนู "ตั้งค่า")', 'info');
+                        return;
+                    }
                     hasPendingChanges = true; // ล็อคระบบ Sync อัตโนมัติทันที
-                    const idx = attendance.value.findIndex(a => a.studentId === stdId && a.date === attendanceDate.value);
+                    const targetId = String(stdId);
+                    const targetDate = normalizeDateStr(attendanceDate.value);
+                    const idx = attendance.value.findIndex(a => String(a.studentId) === targetId && normalizeDateStr(a.date) === targetDate);
                     
                     if (idx > -1) {
                         if (attendance.value[idx].status === status) {
                             // หากกดปุ่มสถานะเดิมซ้ำ ระบบจะไม่ทำอะไร (ป้องกันการเผลอกดซ้ำแล้วข้อมูลหาย)
-                            // แต่ถ้ากดสถานะอื่น จะสามารถแก้ไขเปลี่ยนสถานะได้ตามปกติ
                             return;
                         } else {
                             // เปลี่ยนเป็นสถานะใหม่
@@ -1589,7 +1770,7 @@
                         }
                     } else {
                         // บันทึกสถานะใหม่
-                        attendance.value.push({ studentId: stdId, date: attendanceDate.value, status: status });
+                        attendance.value.push({ studentId: targetId, date: targetDate, status: status });
                     }
                     
                     // ยิงข้อมูลขึ้น Google Sheets ทันทีแบบไม่รอ (Non-blocking) ทำให้ UI ไม่ติดขัด กดได้รัวๆ
@@ -1615,8 +1796,14 @@
                 };
 
                 const toggleAttendance = (stdId) => {
+                    if (isAttendanceLocked.value) {
+                        showModal('🔒 ระบบถูกล็อค', 'วันที่เลือกไม่ได้เปิดให้เช็คชื่อ (กดปุ่มปลดล็อคด้านบนหรือไปที่เมนู "ตั้งค่า")', 'info');
+                        return;
+                    }
                     hasPendingChanges = true; // ล็อคระบบ Sync อัตโนมัติทันทีที่กด!
-                    const idx = attendance.value.findIndex(a => a.studentId === stdId && a.date === attendanceDate.value);
+                    const targetId = String(stdId);
+                    const targetDate = normalizeDateStr(attendanceDate.value);
+                    const idx = attendance.value.findIndex(a => String(a.studentId) === targetId && normalizeDateStr(a.date) === targetDate);
                     const order = ['none', 'present', 'activity', 'leave', 'absent'];
                     let currentStatus = 'none';
                     if (idx > -1) currentStatus = attendance.value[idx].status;
@@ -1630,7 +1817,7 @@
                         if (idx > -1) {
                             attendance.value[idx].status = nextStatus;
                         } else {
-                            attendance.value.push({ studentId: stdId, date: attendanceDate.value, status: nextStatus });
+                            attendance.value.push({ studentId: targetId, date: targetDate, status: nextStatus });
                         }
                     }
                     // บังคับเซฟขึ้นออนไลน์ทันที แบบพื้นหลัง
@@ -1638,13 +1825,16 @@
                 };
 
                 const markAllPresent = () => {
+                    if (isAttendanceLocked.value) return;
                     hasPendingChanges = true; // ล็อคระบบ
+                    const targetDate = normalizeDateStr(attendanceDate.value);
                     filteredStudentsForReport.value.forEach(std => {
-                        const idx = attendance.value.findIndex(a => a.studentId === std.id && a.date === attendanceDate.value);
+                        const targetId = String(std.id);
+                        const idx = attendance.value.findIndex(a => String(a.studentId) === targetId && normalizeDateStr(a.date) === targetDate);
                         if (idx > -1) {
                             attendance.value[idx].status = 'present';
                         } else {
-                            attendance.value.push({ studentId: std.id, date: attendanceDate.value, status: 'present' });
+                            attendance.value.push({ studentId: targetId, date: targetDate, status: 'present' });
                         }
                     });
                     
@@ -1707,13 +1897,15 @@
                 };
 
                 const getAttendanceStats = (stdId) => {
-                    let records = attendance.value.filter(a => a.studentId === stdId);
+                    const targetId = String(stdId);
+                    let records = attendance.value.filter(a => String(a.studentId) === targetId);
                     if (attMode.value === 'daily') {
-                        records = records.filter(a => a.date === attendanceDate.value);
+                        const targetDate = normalizeDateStr(attendanceDate.value);
+                        records = records.filter(a => normalizeDateStr(a.date) === targetDate);
                     } else if (attMode.value === 'monthly') {
-                        records = records.filter(a => a.date.startsWith(attMonth.value));
+                        records = records.filter(a => normalizeDateStr(a.date).startsWith(attMonth.value));
                     } else if (attMode.value === 'range') {
-                        records = records.filter(a => a.date >= attStartDate.value && a.date <= attEndDate.value);
+                        records = records.filter(a => normalizeDateStr(a.date) >= attStartDate.value && normalizeDateStr(a.date) <= attEndDate.value);
                     } 
 
                     const present = records.filter(a => a.status === 'present').length;
@@ -1726,7 +1918,9 @@
                 };
 
                 const getAttendanceMark = (stdId, date) => {
-                    const record = attendance.value.find(a => a.studentId === stdId && a.date === date);
+                    const targetId = String(stdId);
+                    const targetDate = normalizeDateStr(date);
+                    const record = attendance.value.find(a => String(a.studentId) === targetId && normalizeDateStr(a.date) === targetDate);
                     if (!record) return '-';
                     if (record.status === 'present') return '✅';
                     if (record.status === 'activity') return '🟣';
@@ -1736,7 +1930,8 @@
                 };
 
                 const getStudentAllTimeStats = (stdId) => {
-                    const records = attendance.value.filter(a => a.studentId === stdId);
+                    const targetId = String(stdId);
+                    const records = attendance.value.filter(a => String(a.studentId) === targetId);
                     const present = records.filter(a => a.status === 'present').length;
                     const activity = records.filter(a => a.status === 'activity').length;
                     const absent = records.filter(a => a.status === 'absent').length;
@@ -2139,7 +2334,7 @@
                 };
 
                 const toggleTaskStatus = async (taskId) => {
-                    const task = tasks.value.find(t => t.id === taskId);
+                    const task = tasks.value.find(t => String(t.id) === String(taskId));
                     if(task) {
                         task.isCompleted = !task.isCompleted;
                         hasPendingChanges = true;
@@ -2147,9 +2342,87 @@
                     }
                 };
 
+                // เปิดหน้าต่างแก้ไขการบ้าน (แก้ข้อความที่พิมพ์ผิด + เพิ่ม/เปลี่ยน/ลบรูปภาพ)
+                const openEditTaskModal = (task) => {
+                    editingTask.value = { ...task };
+                    editPendingFile.value = null;
+                    editPendingImageUrl.value = '';
+                    editRemoveImage.value = false;
+                };
+
+                const closeEditTaskModal = () => {
+                    editingTask.value = null;
+                    editPendingFile.value = null;
+                    editPendingImageUrl.value = '';
+                    editRemoveImage.value = false;
+                };
+
+                const onEditTaskFileChange = (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        editPendingFile.value = e.target.files[0];
+                        editPendingImageUrl.value = URL.createObjectURL(e.target.files[0]);
+                        editRemoveImage.value = false;
+                    }
+                };
+
+                const removeEditTaskImage = () => {
+                    editPendingFile.value = null;
+                    editPendingImageUrl.value = '';
+                    editRemoveImage.value = true;
+                    if (editingTask.value) {
+                        editingTask.value.imageUrl = '';
+                    }
+                    const fileInput = document.getElementById('editTaskFileInput');
+                    if (fileInput) fileInput.value = '';
+                };
+
+                const saveEditedTask = async () => {
+                    if (!editingTask.value) return;
+                    if (!editingTask.value.subject || !editingTask.value.detail) {
+                        showModal('แจ้งเตือน', 'กรุณากรอกวิชาและรายละเอียดการบ้านให้ครบนะจ๊ะ');
+                        return;
+                    }
+
+                    isUploading.value = true;
+                    try {
+                        let finalImageUrl = editingTask.value.imageUrl || '';
+
+                        if (editPendingFile.value) {
+                            const tempPreview = editPendingImageUrl.value;
+                            try {
+                                finalImageUrl = await uploadImageToDrive(editPendingFile.value);
+                                localImageMap.value[editingTask.value.id] = tempPreview;
+                            } catch (e) {
+                                showModal('แจ้งเตือน', 'อัปโหลดรูปใหม่ไม่สำเร็จ แต่ระบบจะบันทึกข้อความที่แก้ไขไว้ให้นะจ๊ะ: ' + (e.message || e.toString()));
+                            }
+                        } else if (editRemoveImage.value) {
+                            finalImageUrl = '';
+                            delete localImageMap.value[editingTask.value.id];
+                        }
+
+                        const idx = tasks.value.findIndex(t => String(t.id) === String(editingTask.value.id));
+                        if (idx > -1) {
+                            tasks.value[idx].date = editingTask.value.date || getTodayLocal();
+                            tasks.value[idx].dueDate = editingTask.value.dueDate || '';
+                            tasks.value[idx].subject = editingTask.value.subject;
+                            tasks.value[idx].detail = editingTask.value.detail;
+                            tasks.value[idx].imageUrl = finalImageUrl;
+                        }
+
+                        hasPendingChanges = true;
+                        await saveDataToCloud();
+                        closeEditTaskModal();
+                        showModal('สำเร็จ', 'บันทึกการแก้ไขการบ้านเรียบร้อยแล้วจ้า! ✏️✨');
+                    } catch (err) {
+                        showModal('ข้อผิดพลาด', 'ไม่สามารถบันทึกการแก้ไขได้: ' + err.message);
+                    } finally {
+                        isUploading.value = false;
+                    }
+                };
+
                 const deleteTask = (taskId) => {
                     showModal('ยืนยัน', 'ต้องการลบการบ้านชิ้นนี้ใช่หรือไม่?', 'confirm', async () => {
-                        tasks.value = tasks.value.filter(t => t.id !== taskId);
+                        tasks.value = tasks.value.filter(t => String(t.id) !== String(taskId));
                         hasPendingChanges = true;
                         closeModal();
                         await saveDataToCloud(); // บังคับเซฟขึ้นออนไลน์ทันที
@@ -2159,7 +2432,7 @@
                 const getStudentTodayStatus = () => {
                     const today = getTodayLocal();
                     if(!user.value) return {label:'', color:''};
-                    const record = attendance.value.find(a => a.studentId === user.value.id && a.date === today);
+                    const record = attendance.value.find(a => String(a.studentId) === String(user.value.id) && normalizeDateStr(a.date) === today);
                     if (!record) return { label: 'ยังไม่เช็ค', color: '#9ca3af' };
                     if (record.status === 'present') return { label: 'มาเรียน', color: '#10b981' };
                     if (record.status === 'activity') return { label: 'ไปทำกิจกรรม', color: '#8b5cf6' };
@@ -2179,7 +2452,7 @@
                         link.href = canvas.toDataURL('image/jpeg');
                         link.click();
                     } catch(e) {
-                        alert("ไม่สามารถบันทึกรูปได้");
+                        showModal('ข้อผิดพลาด', 'ไม่สามารถบันทึกรูปได้');
                     }
                 };
 
@@ -2466,10 +2739,11 @@
                     uniqueClasses, filteredStudentsForReport, myTasks, flatReportTasks, localImageMap, checkedCount,
                     newTask, newStudent, modal, showModal, closeModal,
                     pendingFile, pendingImageUrl, onFileChange, removePendingFile, isUploading,
+                    editingTask, editPendingImageUrl, editRemoveImage, openEditTaskModal, closeEditTaskModal, onEditTaskFileChange, removeEditTaskImage, saveEditedTask,
                     studentSearch, viewingStudent, filteredStudentsForManagement, onProfilePicChange, cancelProfilePic, saveProfilePic, removeProfilePic, pendingProfileUrl,
                     selectedStudents, isAllStudentsSelected, toggleSelectAllStudents, deleteSelectedStudents,
                     showOnlineImport, onlineSheetUrl, importFromOnlineSheet, importStudentsFile, exportStudentsExcel,
-                    getAttendanceStatusDisplay, handleAttendanceClick, toggleAttendance, markAllPresent, clearDailyAttendance, clearAllAttendance, clearDisplayedAttendance, deleteAttendanceByDate, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
+                    getAttendanceStatusDisplay, setAttendanceStatus, handleAttendanceClick, toggleAttendance, markAllPresent, clearDailyAttendance, clearAllAttendance, clearDisplayedAttendance, deleteAttendanceByDate, saveAttendance, getAttendanceStats, getStudentAllTimeStats,
                     dynamicAttendanceDates, getAttendanceMark,
                     getTasksForStudent, addStudent, deleteStudent, saveSettings, uploadSettingImage,
                     addTask, toggleTaskStatus, deleteTask, getStudentTodayStatus,
@@ -2478,7 +2752,7 @@
                     exportStudentReportDoc, exportStudentReportPdf, exportStudentReportImage,
                     saveDataToCloud, loadDataFromCloud, isOnlineSyncing,
                     allSubjects, allDetails, isAttendanceLocked, isTaskLocked, isTodayLocked,
-                    daysOfWeek, allowedDaysArray
+                    daysOfWeek, allowedDaysArray, toggleAllowedDay, setAllowedDays, getDayOfWeekFromStr, getDayLabelFromStr
                 };
             }
         }).mount('#app');
